@@ -514,7 +514,7 @@ Ensure you have the following installed on your machine:
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/your-org/SE_PROJECT---TRAIN_BOOKING_SYSTEM.git
+   git clone https://github.com/IT25102327/Web-based-Train-Scheduling-Booking-System.git
    cd SE_PROJECT---TRAIN_BOOKING_SYSTEM
    ```
 
