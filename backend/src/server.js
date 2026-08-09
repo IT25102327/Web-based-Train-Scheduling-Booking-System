@@ -10,15 +10,16 @@ const { PORT } = require('./config/app.config');
 const startServer = async () => {
   try {
     await sequelize.authenticate();
-    console.log('Database connection established successfully.');
-
-    app.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
-    });
+    console.log('✅ Database connection established successfully.');
   } catch (error) {
-    console.error('Unable to connect to the database:', error);
-    process.exit(1);
+    console.warn('⚠️  MySQL not connected — server will start without database.');
+    console.warn('   Reason:', error.message);
+    console.warn('   Start MySQL and restart the server when ready.\n');
   }
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Backend server listening on http://localhost:${PORT}`);
+  });
 };
 
 startServer();

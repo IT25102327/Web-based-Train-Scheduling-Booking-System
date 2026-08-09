@@ -14,6 +14,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Train Booking API is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.use('/api', routes);
 
 app.use(errorMiddleware);
