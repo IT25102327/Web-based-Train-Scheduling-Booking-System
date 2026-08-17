@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.notifications-wrapper})}">
+<head>
+  <title>Notifications & Live Alerts | TrainBook</title>
+</head>
+<body>
+  <div class="notifications-wrapper container" style="max-width: 860px;">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+      <div>
+        <h2>Notifications & Travel Alerts</h2>
+        <p style="color: var(--color-text-muted);">Real-time delay alerts, schedule changes, and booking confirmations</p>
+      </div>
+      <form th:action="@{/notifications/mark-all-read}" method="post" style="margin: 0;">
+        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit" class="btn btn-secondary btn-sm">
+          ✓ Mark All as Read
+        </button>
+      </form>
+    </div>
+
+    <!-- Empty State -->
+    <div class="card" style="text-align: center; padding: 48px var(--spacing-lg);" 
+         th:if="${notifications == null or notifications.empty}">
+      <div style="font-size: 3rem; margin-bottom: 12px;">🔔</div>
+      <h3>You're All Caught Up!</h3>
+      <p style="color: var(--color-text-muted); max-width: 420px; margin: 0 auto 16px;">
+        No active notifications or alerts at this moment. You will receive updates here for any train schedule adjustments or bookings.
+      </p>
+      <a th:href="@{/trains/search}" class="btn btn-outline btn-sm">Search Trains</a>
+    </div>
+
+    <!-- Notifications List -->
+    <div th:if="${notifications != null and not notifications.empty}">
+      <div th:each="notif : ${notifications}" 
+           class="notification-item" 
+           th:classappend="${notif.read == false ? 'unread' : ''}">
+        
+        <!-- Notification Icon -->
+        <div class="notification-icon" 
+             th:style="${notif.type == 'DELAY' or notif.type == 'CANCELLED' ? 'background-color: var(--color-warning-light); color: var(--color-warning-dark);' : 'background-color: var(--color-primary-subtle); color: var(--color-primary);'}">
+          <span th:if="${notif.type == 'DELAY'}">⏱️</span>
+          <span th:if="${notif.type == 'CANCELLED'}">⚠️</span>
+          <span th:if="${notif.type == 'BOOKING' or notif.type == 'CONFIRMATION'}">🎫</span>
+          <span th:if="${notif.type == null or (notif.type != 'DELAY' and notif.type != 'CANCELLED' and notif.type != 'BOOKING' and notif.type != 'CONFIRMATION')}">🔔</span>
+        </div>
+
+        <!-- Notification Content -->
+        <div style="flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+            <strong style="color: var(--color-primary); font-size: 0.98rem;" th:text="${notif.title != null ? notif.title : 'Train Schedule Update'}">
+              Schedule Delay Notice: Express 1015
+            </strong>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted); font-family: var(--font-sans);" 
+                  th:text="${notif.createdAt != null ? notif.createdAt : '10 minutes ago'}">
+              10 minutes ago
+            </span>
+          </div>
+
+          <p style="color: var(--color-text); font-size: 0.88rem; margin-bottom: 6px; line-height: 1.5;" 
+             th:text="${notif.message != null ? notif.message : 'Express Train #1015 is running with an estimated delay of 25 minutes due to track maintenance near Polgahawela.'}">
+            Express Train #1015 is running with an estimated delay of 25 minutes due to track maintenance near Polgahawela.
+          </p>
+
+          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.78rem;">
+            <span class="badge badge-warning" th:if="${notif.type == 'DELAY'}">Delay Alert</span>
+            <span class="badge badge-danger" th:if="${notif.type == 'CANCELLED'}">Service Cancelled</span>
+            <span class="badge badge-success" th:if="${notif.type == 'BOOKING'}">Booking Confirmed</span>
+            <span class="badge badge-info" th:if="${notif.type == 'SYSTEM'}">System Announcement</span>
+
+            <span th:if="${notif.trainNumber != null}" style="color: var(--color-text-muted); font-family: var(--font-mono);" th:text="${'Train #' + notif.trainNumber}">
+              Train #1015
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

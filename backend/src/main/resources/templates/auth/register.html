@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account | TrainBook</title>
+  
+  <link rel="stylesheet" th:href="@{/css/variables.css}" href="/css/variables.css">
+  <link rel="stylesheet" th:href="@{/css/global.css}" href="/css/global.css">
+</head>
+<body class="auth-page">
+
+  <div class="auth-card" style="max-width: 520px;">
+    <div class="auth-header">
+      <div class="auth-logo">🚂</div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">Join TrainBook to reserve seats and get real-time train alerts</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div class="alert alert-danger" th:if="${errorMessage != null}">
+      <span>⚠️</span>
+      <span th:text="${errorMessage}">Registration error occurred.</span>
+    </div>
+
+    <!-- Registration Form -->
+    <form th:action="@{/register}" th:object="${registerRequest}" method="post">
+      <!-- CSRF Token -->
+      <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+        <!-- First Name -->
+        <div class="form-group">
+          <label class="form-label" for="firstName">First Name</label>
+          <input type="text" 
+                 id="firstName" 
+                 th:field="*{firstName}" 
+                 class="form-control" 
+                 placeholder="John" 
+                 required>
+          <div class="form-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">First name required</div>
+        </div>
+
+        <!-- Last Name -->
+        <div class="form-group">
+          <label class="form-label" for="lastName">Last Name</label>
+          <input type="text" 
+                 id="lastName" 
+                 th:field="*{lastName}" 
+                 class="form-control" 
+                 placeholder="Perera" 
+                 required>
+          <div class="form-error" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}">Last name required</div>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <div class="input-icon-group">
+          <span class="icon">✉️</span>
+          <input type="email" 
+                 id="email" 
+                 th:field="*{email}" 
+                 class="form-control" 
+                 placeholder="john.perera@example.com" 
+                 required>
+        </div>
+        <div class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Valid email required</div>
+      </div>
+
+      <!-- Phone Number -->
+      <div class="form-group">
+        <label class="form-label" for="phoneNumber">Phone Number</label>
+        <div class="input-icon-group">
+          <span class="icon">📞</span>
+          <input type="tel" 
+                 id="phoneNumber" 
+                 th:field="*{phoneNumber}" 
+                 class="form-control" 
+                 placeholder="0771234567" 
+                 required>
+        </div>
+        <div class="form-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}">Valid phone number required</div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-icon-group">
+          <span class="icon">🔒</span>
+          <input type="password" 
+                 id="password" 
+                 th:field="*{password}" 
+                 class="form-control" 
+                 placeholder="Min. 8 characters with letters & numbers" 
+                 required>
+        </div>
+        <div class="form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Password required</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: var(--spacing-lg);">
+        <label class="form-check">
+          <input type="checkbox" required>
+          <span style="font-size: 0.85rem;">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">
+        Create Account
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <span>Already have an account?</span>
+      <a th:href="@{/login}" style="font-weight: 600; margin-left: 4px;">Sign In</a>
+      <div style="margin-top: 12px;">
+        <a th:href="@{/trains/search}" style="color: var(--color-text-muted); font-size: 0.85rem;">← Back to Home / Search</a>
+      </div>
+    </div>
+  </div>
+
+  <script th:src="@{/js/main.js}" src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.profile-page-wrapper})}">
+<head>
+  <title>My Profile & Preferences | TrainBook</title>
+</head>
+<body>
+  <div class="profile-page-wrapper container" style="max-width: 960px;">
+    <!-- Page Title -->
+    <div style="margin-bottom: var(--spacing-lg);">
+      <h2>Passenger Account & Profile</h2>
+      <p style="color: var(--color-text-muted);">Manage personal details, security settings, and saved railway routes</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-lg); align-items: start;">
+      
+      <!-- ================= PROFILE SUMMARY CARD ================= -->
+      <div>
+        <div class="card" style="text-align: center; margin-bottom: var(--spacing-lg);">
+          <div class="card-body">
+            <!-- Avatar Placeholder -->
+            <div style="width: 84px; height: 84px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 16px; box-shadow: var(--shadow-md);">
+              👤
+            </div>
+
+            <h3 style="margin-bottom: 4px;" th:text="${user != null and user.fullName != null ? user.fullName : 'Kasun Perera'}">
+              Kasun Perera
+            </h3>
+            <p style="color: var(--color-text-muted); font-size: 0.88rem; margin-bottom: 12px;" th:text="${user != null and user.email != null ? user.email : 'kasun.perera@example.com'}">
+              kasun.perera@example.com
+            </p>
+
+            <span class="badge badge-info" style="margin-bottom: 16px;">Registered Passenger</span>
+
+            <div style="border-top: 1px solid var(--color-border-light); padding-top: 12px; font-size: 0.82rem; color: var(--color-text-muted); text-align: left;">
+              <div style="margin-bottom: 6px;">
+                <strong>Member Since:</strong> <span th:text="${user != null and user.memberSince != null ? user.memberSince : 'August 2026'}">August 2026</span>
+              </div>
+              <div>
+                <strong>Total Trips Taken:</strong> <span th:text="${user != null and user.totalBookings != null ? user.totalBookings : '6'}">6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Links Card -->
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Quick Actions</h4>
+          </div>
+          <div class="card-body" style="padding: 12px;">
+            <a th:href="@{/passenger/bookings}" class="btn btn-secondary btn-block btn-sm" style="margin-bottom: 8px; justify-content: flex-start;">
+              <span>🎫</span> View Booking History
+            </a>
+            <a th:href="@{/notifications}" class="btn btn-secondary btn-block btn-sm" style="justify-content: flex-start;">
+              <span>🔔</span> Notification Alerts
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= RIGHT COLUMN: EDIT PROFILE & FAVORITE ROUTES ================= -->
+      <div>
+        <!-- Edit Profile Details Card -->
+        <div class="card" style="margin-bottom: var(--spacing-xl);">
+          <div class="card-header">
+            <h3 class="card-title">Edit Personal Details</h3>
+          </div>
+          <div class="card-body">
+            <form th:action="@{/passenger/profile}" method="post">
+              <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                <div class="form-group">
+                  <label class="form-label" for="firstName">First Name</label>
+                  <input type="text" 
+                         id="firstName" 
+                         name="firstName" 
+                         class="form-control" 
+                         th:value="${user != null and user.firstName != null ? user.firstName : 'Kasun'}" 
+                         required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="lastName">Last Name</label>
+                  <input type="text" 
+                         id="lastName" 
+                         name="lastName" 
+                         class="form-control" 
+                         th:value="${user != null and user.lastName != null ? user.lastName : 'Perera'}" 
+                         required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="email">Email Address (Read-Only)</label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       class="form-control" 
+                       th:value="${user != null and user.email != null ? user.email : 'kasun.perera@example.com'}" 
+                       readonly 
+                       style="background-color: var(--color-surface-muted);">
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+                <div class="form-group">
+                  <label class="form-label" for="phone">Phone Number</label>
+                  <input type="tel" 
+                         id="phone" 
+                         name="phone" 
+                         class="form-control" 
+                         th:value="${user != null and user.phoneNumber != null ? user.phoneNumber : '0771234567'}" 
+                         required>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="nic">National ID / Passport</label>
+                  <input type="text" 
+                         id="nic" 
+                         name="nic" 
+                         class="form-control" 
+                         th:value="${user != null and user.nic != null ? user.nic : '199623849102'}">
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: var(--spacing-sm);">
+                <button type="submit" class="btn btn-primary">Save Profile Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Favorite Routes Section -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Saved Favorite Routes</h3>
+          </div>
+          <div class="card-body">
+            <!-- List of Saved Routes -->
+            <div th:if="${favoriteRoutes != null and not favoriteRoutes.empty}" style="margin-bottom: var(--spacing-lg);">
+              <div th:each="fav : ${favoriteRoutes}" 
+                   style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm); margin-bottom: 8px; background: #fafbfc;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 1.2rem;">⭐</span>
+                  <div>
+                    <strong style="color: var(--color-primary);" th:text="${fav.origin + ' ➔ ' + fav.destination}">Colombo Fort ➔ Kandy</strong>
+                    <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${fav.notes != null ? fav.notes : 'Standard Commute'}">Regular Travel Route</div>
+                  </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <a th:href="@{/trains/search(origin=${fav.origin}, destination=${fav.destination})}" class="btn btn-accent btn-sm">
+                    Find Trains
+                  </a>
+                  <form th:action="@{/passenger/favorites/{id}/delete(id=${fav.id})}" method="post" style="display: inline; margin: 0;">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="btn btn-danger btn-sm" title="Remove Favorite">
+                      ✕
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty Favorite Routes -->
+            <div th:if="${favoriteRoutes == null or favoriteRoutes.empty}" style="text-align: center; padding: 16px; color: var(--color-text-muted); font-size: 0.9rem;">
+              No favorite routes saved yet. Add your frequent travel routes below for quick 1-click searches.
+            </div>
+
+            <!-- Mini Form: Add Favorite Route -->
+            <div style="background: var(--color-surface-muted); border-radius: var(--radius-sm); padding: var(--spacing-md); margin-top: var(--spacing-md);">
+              <h4 style="font-size: 0.95rem; margin-bottom: 12px;">Add New Favorite Route</h4>
+              <form th:action="@{/passenger/favorites/add}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--spacing-sm); align-items: flex-end;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 0.8rem;">Origin</label>
+                    <input type="text" name="origin" class="form-control form-control-sm" placeholder="e.g. Colombo Fort" required>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 0.8rem;">Destination</label>
+                    <input type="text" name="destination" class="form-control form-control-sm" placeholder="e.g. Galle" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary" style="height: 44px;">
+                    <span>➕</span> Save Route
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

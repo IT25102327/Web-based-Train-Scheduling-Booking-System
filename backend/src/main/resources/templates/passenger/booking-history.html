@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.history-page-wrapper})}">
+<head>
+  <title>My Bookings & Travel History | TrainBook</title>
+</head>
+<body>
+  <div class="history-page-wrapper container">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+      <div>
+        <h2>My Bookings & Tickets</h2>
+        <p style="color: var(--color-text-muted);">View, download and manage all your past and upcoming train reservations</p>
+      </div>
+      <a th:href="@{/trains/search}" class="btn btn-accent">
+        <span>➕</span> Book New Ticket
+      </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div style="display: flex; gap: 8px; margin-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border); padding-bottom: 8px;">
+      <a th:href="@{/passenger/bookings}" 
+         class="btn btn-sm" 
+         th:classappend="${param.filter == null ? 'btn-primary' : 'btn-secondary'}">
+        All Bookings
+      </a>
+      <a th:href="@{/passenger/bookings(filter='UPCOMING')}" 
+         class="btn btn-sm" 
+         th:classappend="${param.filter != null and param.filter[0] == 'UPCOMING' ? 'btn-primary' : 'btn-secondary'}">
+        Upcoming Trips
+      </a>
+      <a th:href="@{/passenger/bookings(filter='COMPLETED')}" 
+         class="btn btn-sm" 
+         th:classappend="${param.filter != null and param.filter[0] == 'COMPLETED' ? 'btn-primary' : 'btn-secondary'}">
+        Past Trips
+      </a>
+      <a th:href="@{/passenger/bookings(filter='CANCELLED')}" 
+         class="btn btn-sm" 
+         th:classappend="${param.filter != null and param.filter[0] == 'CANCELLED' ? 'btn-primary' : 'btn-secondary'}">
+        Cancelled
+      </a>
+    </div>
+
+    <!-- Bookings Table Card -->
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Ticket No / PNR</th>
+              <th>Train & Route</th>
+              <th>Travel Date</th>
+              <th>Seats</th>
+              <th>Class</th>
+              <th>Total Fare</th>
+              <th>Status</th>
+              <th style="text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Empty State -->
+            <tr th:if="${bookings == null or bookings.empty}">
+              <td colspan="8" style="text-align: center; padding: 48px var(--spacing-lg);">
+                <div style="font-size: 2.5rem; margin-bottom: 12px;">🎫</div>
+                <h3>No Bookings Found</h3>
+                <p style="color: var(--color-text-muted); margin-bottom: 16px;">
+                  You don't have any train reservations under this category.
+                </p>
+                <a th:href="@{/trains/search}" class="btn btn-primary btn-sm">Find Trains & Book Now</a>
+              </td>
+            </tr>
+
+            <!-- Bookings List Loop -->
+            <tr th:each="booking : ${bookings}">
+              <td>
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);" 
+                      th:text="${booking.ticketNumber != null ? booking.ticketNumber : ('TKT-2026-' + booking.id)}">
+                  TKT-2026-9821
+                </span>
+                <div style="font-size: 0.75rem; color: var(--color-text-muted);" 
+                     th:text="${booking.bookingDate != null ? 'Booked: ' + booking.bookingDate : 'Booked: 2026-08-16'}">
+                  Booked: 2026-08-16
+                </div>
+              </td>
+              <td>
+                <strong style="color: var(--color-primary);" th:text="${booking.trainName != null ? booking.trainName : 'Udarata Menike'}">Udarata Menike</strong>
+                <div style="font-size: 0.82rem; color: var(--color-text-muted);" th:text="${(booking.origin != null ? booking.origin : 'Colombo Fort') + ' ➔ ' + (booking.destination != null ? booking.destination : 'Kandy')}">
+                  Colombo Fort ➔ Kandy
+                </div>
+              </td>
+              <td>
+                <span style="font-weight: 600;" th:text="${booking.travelDate != null ? booking.travelDate : '2026-08-18'}">2026-08-18</span>
+                <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${booking.departureTime != null ? booking.departureTime : '05:55 AM'}">05:55 AM</div>
+              </td>
+              <td>
+                <span th:text="${booking.seatCount != null ? booking.seatCount + ' seat(s)' : '1 seat'}">1 seat</span>
+              </td>
+              <td>
+                <span class="badge badge-info" th:text="${booking.seatClass != null ? booking.seatClass : 'FIRST'}">FIRST</span>
+              </td>
+              <td>
+                <strong style="color: var(--color-primary);" 
+                        th:text="${booking.totalAmount != null ? 'LKR ' + #numbers.formatDecimal(booking.totalAmount, 1, 'COMMA', 2, 'POINT') : 'LKR 1,800.00'}">
+                  LKR 1,800.00
+                </strong>
+              </td>
+              <td>
+                <span class="badge badge-confirmed" th:if="${booking.status == null or booking.status == 'CONFIRMED' or booking.status == 'VALID'}">Confirmed</span>
+                <span class="badge badge-boarded" th:if="${booking.status == 'BOARDED'}">Boarded</span>
+                <span class="badge badge-warning" th:if="${booking.status == 'PENDING'}">Pending</span>
+                <span class="badge badge-cancelled" th:if="${booking.status == 'CANCELLED'}">Cancelled</span>
+              </td>
+              <td style="text-align: right;">
+                <div class="table-actions" style="justify-content: flex-end;">
+                  <a th:href="@{/booking/ticket/{id}(id=${booking.id})}" class="btn btn-outline btn-sm">
+                    <span>🎫</span> View Ticket
+                  </a>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

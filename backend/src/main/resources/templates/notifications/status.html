@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin-base :: layout(~{::div.train-status-wrapper})}">
+<head>
+  <title>Update Train Status & Alerts | Admin Console</title>
+</head>
+<body>
+  <div class="train-status-wrapper" style="max-width: 900px;">
+    <!-- Page Title -->
+    <div style="margin-bottom: var(--spacing-lg);">
+      <h2>Live Train Status & Delay Dispatcher</h2>
+      <p style="color: var(--color-text-muted);">Broadcast real-time transit status updates and emergency passenger alerts</p>
+    </div>
+
+    <!-- Status Update Card Form -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="background: linear-gradient(135deg, var(--color-primary) 0%, #1c4573 100%); color: #ffffff;">
+        <h3 class="card-title" style="color: #ffffff;">Broadcast Schedule Update</h3>
+        <span class="badge badge-warning">Live Dispatch</span>
+      </div>
+
+      <div class="card-body">
+        <div class="alert alert-info" style="margin-bottom: var(--spacing-lg);">
+          <span>ℹ️</span>
+          <div>
+            <strong>Automated Notification Dispatch:</strong> Updating a train's status to <em>Delayed</em> or <em>Cancelled</em> will immediately dispatch push, email, and SMS notifications to all passengers holding tickets on that service.
+          </div>
+        </div>
+
+        <form th:action="@{/admin/trains/status}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+          <!-- Train Selection -->
+          <div class="form-group">
+            <label class="form-label" for="trainSelect">Select Train Service / Schedule</label>
+            <select id="trainSelect" name="trainId" class="form-select" required>
+              <option value="" disabled selected>-- Choose Train Schedule --</option>
+              <option th:each="t : ${trains}" 
+                      th:value="${t.id}" 
+                      th:text="${t.trainNumber + ' - ' + t.trainName + ' (' + (t.status != null ? t.status : 'ON_TIME') + ')'}">
+                1015 - Udarata Menike (ON_TIME)
+              </option>
+              <!-- Fallback sample options if trains list empty -->
+              <option value="1">1015 - Udarata Menike (Colombo ➔ Kandy)</option>
+              <option value="2">1005 - Podi Menike (Colombo ➔ Badulla)</option>
+              <option value="3">8050 - Galu Kumari (Colombo ➔ Matara)</option>
+              <option value="4">4077 - Yal Devi (Colombo ➔ Jaffna)</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+            <!-- Status Choice -->
+            <div class="form-group">
+              <label class="form-label" for="newStatus">New Operational Status</label>
+              <select id="newStatus" name="status" class="form-select" required>
+                <option value="ON_TIME">🟢 ON TIME (Normal Operations)</option>
+                <option value="DELAYED">🟡 DELAYED (Schedule Disruption)</option>
+                <option value="CANCELLED">🔴 CANCELLED (Service Suspended)</option>
+                <option value="PLATFORM_CHANGE">🔵 PLATFORM CHANGE</option>
+              </select>
+            </div>
+
+            <!-- Delay Time (Minutes) -->
+            <div class="form-group">
+              <label class="form-label" for="delayMinutes">Delay Duration (Minutes)</label>
+              <input type="number" 
+                     id="delayMinutes" 
+                     name="delayMinutes" 
+                     class="form-control" 
+                     placeholder="e.g. 25" 
+                     min="0" 
+                     value="0">
+            </div>
+          </div>
+
+          <!-- Reason Textarea -->
+          <div class="form-group">
+            <label class="form-label" for="statusReason">Reason / Passenger Announcement Message</label>
+            <textarea id="statusReason" 
+                      name="reason" 
+                      class="form-control" 
+                      rows="3" 
+                      placeholder="e.g. Due to urgent signal track repairs at Polgahawela junction, Express 1015 is running 25 minutes behind schedule. We apologize for the inconvenience." 
+                      required></textarea>
+            <div class="form-hint">This text will be included in the automated SMS and Email alerts.</div>
+          </div>
+
+          <!-- Channels Checkboxes -->
+          <div class="form-group" style="background: var(--color-surface-muted); padding: var(--spacing-md); border-radius: var(--radius-sm);">
+            <label class="form-label" style="margin-bottom: 8px;">Alert Distribution Channels</label>
+            <div style="display: flex; gap: var(--spacing-lg); flex-wrap: wrap;">
+              <label class="form-check">
+                <input type="checkbox" name="channelEmail" checked>
+                <span>Email Notifications</span>
+              </label>
+              <label class="form-check">
+                <input type="checkbox" name="channelSms" checked>
+                <span>SMS Alert</span>
+              </label>
+              <label class="form-check">
+                <input type="checkbox" name="channelWeb" checked>
+                <span>Passenger Web Board</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: var(--spacing-sm); margin-top: var(--spacing-lg);">
+            <a th:href="@{/dashboard}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-lg">
+              <span>📢</span> Update & Broadcast Status
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Active Bulletins Section -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Recent Status Bulletins</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Train Service</th>
+              <th>Status</th>
+              <th>Reason</th>
+              <th>Updated At</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Exp 1015 (Udarata Menike)</strong></td>
+              <td><span class="badge badge-warning">Delayed (20m)</span></td>
+              <td>Signal testing near Ragama station</td>
+              <td style="font-size: 0.82rem; color: var(--color-text-muted);">15 mins ago</td>
+            </tr>
+            <tr>
+              <td><strong>Exp 8050 (Galu Kumari)</strong></td>
+              <td><span class="badge badge-ontime">On Time</span></td>
+              <td>Normal Coastal line schedule</td>
+              <td style="font-size: 0.82rem; color: var(--color-text-muted);">1 hour ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

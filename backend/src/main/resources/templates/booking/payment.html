@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.payment-page-wrapper})}">
+<head>
+  <title>Payment & Checkout | TrainBook</title>
+</head>
+<body>
+  <div class="payment-page-wrapper container container-sm">
+    <!-- ================= CHECKOUT STEPPER ================= -->
+    <div class="stepper">
+      <div class="step-item completed">
+        <div class="step-number">✓</div>
+        <span>Select Seats</span>
+      </div>
+      <div class="step-line" style="background-color: var(--color-success);"></div>
+      <div class="step-item active">
+        <div class="step-number">2</div>
+        <span>Payment</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item">
+        <div class="step-number">3</div>
+        <span>E-Ticket</span>
+      </div>
+    </div>
+
+    <!-- ================= BOOKING SUMMARY CARD ================= -->
+    <div class="card" style="margin-bottom: var(--spacing-lg);">
+      <div class="card-header">
+        <h3 class="card-title">Reservation Summary</h3>
+        <span class="badge badge-warning">Awaiting Payment</span>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); font-size: 0.92rem;">
+          <div>
+            <span style="color: var(--color-text-muted); display: block;">Train Service:</span>
+            <strong style="color: var(--color-primary);" th:text="${booking != null and booking.trainName != null ? booking.trainName : 'Udarata Menike (Exp 1015)'}">
+              Udarata Menike (Exp 1015)
+            </strong>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); display: block;">Route:</span>
+            <strong th:text="${booking != null and booking.origin != null and booking.destination != null ? booking.origin + ' ➔ ' + booking.destination : 'Colombo Fort ➔ Kandy'}">
+              Colombo Fort ➔ Kandy
+            </strong>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); display: block;">Travel Date & Time:</span>
+            <strong th:text="${booking != null and booking.travelDate != null ? booking.travelDate + ' at ' + (booking.departureTime != null ? booking.departureTime : '05:55 AM') : '2026-08-18 at 05:55 AM'}">
+              2026-08-18 at 05:55 AM
+            </strong>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); display: block;">Class & Seat Count:</span>
+            <strong>
+              <span th:text="${booking != null and booking.seatClass != null ? booking.seatClass : 'FIRST'}">FIRST</span> Class
+              (<span th:text="${booking != null and booking.seatCount != null ? booking.seatCount + ' seat(s)' : '1 seat(s)'}">1 seat(s)</span>)
+            </strong>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--spacing-md); padding-top: var(--spacing-md); border-top: 1px dashed var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--color-text-muted);">Total Payable:</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-primary);" 
+                 th:text="${booking != null and booking.totalAmount != null ? 'LKR ' + #numbers.formatDecimal(booking.totalAmount, 1, 'COMMA', 2, 'POINT') : 'LKR 1,800.00'}">
+              LKR 1,800.00
+            </div>
+          </div>
+          <span class="badge badge-info">Instant E-Ticket Issuance</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MOCK PAYMENT GATEWAY CARD ================= -->
+    <div class="card">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Payment Method</h3>
+        <div style="display: flex; gap: 6px; font-size: 1.2rem;">
+          💳 💳 💳
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Sandbox Notice Banner -->
+        <div class="alert alert-info" style="margin-bottom: var(--spacing-lg);">
+          <span>🔒</span>
+          <div>
+            <strong>Simulated Payment Gateway:</strong> This is a demo payment environment for SLIIT SE2030 project testing. You can use any dummy card details.
+          </div>
+        </div>
+
+        <form th:action="@{/payment/process}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <input type="hidden" name="bookingId" th:value="${booking != null and booking.id != null ? booking.id : (param.bookingId != null ? param.bookingId : 1)}" />
+          <input type="hidden" name="amount" th:value="${booking != null and booking.totalAmount != null ? booking.totalAmount : 1800.00}" />
+
+          <!-- Card Holder Name -->
+          <div class="form-group">
+            <label class="form-label" for="cardHolderName">Cardholder Name</label>
+            <input type="text" 
+                   id="cardHolderName" 
+                   name="cardHolderName" 
+                   class="form-control" 
+                   placeholder="e.g. KASUN PERERA" 
+                   value="KASUN PERERA" 
+                   required>
+          </div>
+
+          <!-- Card Number -->
+          <div class="form-group">
+            <label class="form-label" for="cardNumber">Card Number</label>
+            <div class="input-icon-group">
+              <span class="icon">💳</span>
+              <input type="text" 
+                     id="cardNumber" 
+                     name="cardNumber" 
+                     class="form-control" 
+                     placeholder="4111 2222 3333 4444" 
+                     value="4111 2222 3333 4444" 
+                     maxlength="19" 
+                     required>
+            </div>
+          </div>
+
+          <!-- Expiry & CVV Row -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-md);">
+            <div class="form-group">
+              <label class="form-label" for="expMonth">Exp Month</label>
+              <select id="expMonth" name="expMonth" class="form-select">
+                <option value="01">01 - Jan</option>
+                <option value="05">05 - May</option>
+                <option value="08" selected>08 - Aug</option>
+                <option value="12">12 - Dec</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="expYear">Exp Year</label>
+              <select id="expYear" name="expYear" class="form-select">
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="cvv">CVV / CVC</label>
+              <input type="password" 
+                     id="cvv" 
+                     name="cvv" 
+                     class="form-control" 
+                     placeholder="123" 
+                     value="888" 
+                     maxlength="4" 
+                     required>
+            </div>
+          </div>
+
+          <!-- Security Check -->
+          <div style="margin-bottom: var(--spacing-lg); font-size: 0.85rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px;">
+            <span>🛡️</span> 256-bit TLS Encrypted simulated transaction
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <span>🔒</span> Pay & Generate E-Ticket Now
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

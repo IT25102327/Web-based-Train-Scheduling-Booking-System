@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.seat-select-wrapper})}">
+<head>
+  <title>Select Class & Seats | TrainBook</title>
+</head>
+<body>
+  <div class="seat-select-wrapper container container-sm">
+    <!-- ================= CHECKOUT STEPPER ================= -->
+    <div class="stepper">
+      <div class="step-item active">
+        <div class="step-number">1</div>
+        <span>Select Seats</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item">
+        <div class="step-number">2</div>
+        <span>Payment</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step-item">
+        <div class="step-number">3</div>
+        <span>E-Ticket</span>
+      </div>
+    </div>
+
+    <!-- ================= TRAIN ITINERARY SUMMARY CARD ================= -->
+    <div class="card" style="margin-bottom: var(--spacing-lg);">
+      <div class="card-header" style="background: linear-gradient(135deg, var(--color-primary) 0%, #1a4473 100%); color: #ffffff;">
+        <div>
+          <span style="font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; color: #67b7f7; font-weight: 700;">Selected Journey</span>
+          <h2 style="color: #ffffff; font-size: 1.4rem; margin-top: 2px;" th:text="${schedule != null and schedule.trainName != null ? schedule.trainName : 'Udarata Menike (Exp 1015)'}">
+            Udarata Menike (Exp 1015)
+          </h2>
+        </div>
+        <span class="badge badge-ontime">Scheduled Service</span>
+      </div>
+
+      <div class="card-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border-light);">
+          <div>
+            <div style="font-size: 0.82rem; color: var(--color-text-muted);">Departure Station & Time</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--color-primary);" th:text="${schedule != null and schedule.departureTime != null ? schedule.departureTime : '05:55 AM'}">05:55 AM</div>
+            <div style="font-weight: 600;" th:text="${schedule != null and schedule.origin != null ? schedule.origin : (origin != null ? origin : 'Colombo Fort')}">Colombo Fort</div>
+          </div>
+
+          <div style="text-align: center; color: var(--color-text-muted);">
+            <span style="font-size: 0.82rem; font-weight: 600;">➔ Direct ➔</span>
+            <div style="font-size: 0.8rem;" th:text="${date != null ? date : (param.date != null ? param.date : 'Today')}">2026-08-18</div>
+          </div>
+
+          <div style="text-align: right;">
+            <div style="font-size: 0.82rem; color: var(--color-text-muted);">Arrival Station & Time</div>
+            <div style="font-size: 1.2rem; font-weight: 800; color: var(--color-primary);" th:text="${schedule != null and schedule.arrivalTime != null ? schedule.arrivalTime : '09:20 AM'}">09:20 AM</div>
+            <div style="font-weight: 600;" th:text="${schedule != null and schedule.destination != null ? schedule.destination : (destination != null ? destination : 'Kandy')}">Kandy</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.88rem;">
+          <span style="color: var(--color-text-muted);">Travel Date: <strong style="color: var(--color-text);" th:text="${date != null ? date : (param.date != null ? param.date : 'Selected Date')}">2026-08-18</strong></span>
+          <span style="color: var(--color-text-muted);">Train Type: <strong style="color: var(--color-text);" th:text="${schedule != null and schedule.trainType != null ? schedule.trainType : 'Express Intercity'}">Express</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SEAT & PASSENGER SELECTION FORM ================= -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Choose Travel Class & Seats</h3>
+      </div>
+      <div class="card-body">
+        <form th:action="@{/booking}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          
+          <!-- Hidden Schedule and Date Inputs -->
+          <input type="hidden" name="scheduleId" th:value="${schedule != null and schedule.id != null ? schedule.id : (param.scheduleId != null ? param.scheduleId : 1)}" />
+          <input type="hidden" name="travelDate" th:value="${date != null ? date : (param.date != null ? param.date : '2026-08-18')}" />
+
+          <!-- Class Selection Cards (Radio buttons) -->
+          <div class="form-group">
+            <label class="form-label">Select Travel Class</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+              <!-- First Class Card -->
+              <label class="seat-class-card" style="display: block;">
+                <input type="radio" 
+                       name="seatClass" 
+                       value="FIRST" 
+                       th:data-price="${schedule != null and schedule.firstClassFare != null ? schedule.firstClassFare : 1800}" 
+                       checked 
+                       style="margin-right: 6px;">
+                <strong style="color: var(--color-primary); font-size: 1.05rem;">1st Class (AC)</strong>
+                <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 4px;">
+                  Air-Conditioned, Reserved Seating, Reclining Seats
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 800; color: var(--color-primary);" th:text="${'LKR ' + (schedule != null and schedule.firstClassFare != null ? schedule.firstClassFare : '1,800.00')}">LKR 1,800.00</span>
+                  <span class="badge badge-success" th:text="${schedule != null and schedule.availableFirstClassSeats != null ? schedule.availableFirstClassSeats + ' left' : '18 left'}">18 left</span>
+                </div>
+              </label>
+
+              <!-- Second Class Card -->
+              <label class="seat-class-card" style="display: block;">
+                <input type="radio" 
+                       name="seatClass" 
+                       value="SECOND" 
+                       th:data-price="${schedule != null and schedule.secondClassFare != null ? schedule.secondClassFare : 1000}" 
+                       style="margin-right: 6px;">
+                <strong style="color: var(--color-primary); font-size: 1.05rem;">2nd Class Reserved</strong>
+                <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 4px;">
+                  Cushioned Seating, Openable Windows, Overhead Storage
+                </div>
+                <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 800; color: var(--color-primary);" th:text="${'LKR ' + (schedule != null and schedule.secondClassFare != null ? schedule.secondClassFare : '1,000.00')}">LKR 1,000.00</span>
+                  <span class="badge badge-success" th:text="${schedule != null and schedule.availableSecondClassSeats != null ? schedule.availableSecondClassSeats + ' left' : '42 left'}">42 left</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Seat Count & Primary Passenger -->
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-md);">
+            <div class="form-group">
+              <label class="form-label" for="seatCount">Number of Seats</label>
+              <select id="seatCount" name="seatCount" class="form-select">
+                <option value="1" selected>1 Passenger</option>
+                <option value="2">2 Passengers</option>
+                <option value="3">3 Passengers</option>
+                <option value="4">4 Passengers</option>
+                <option value="5">5 Passengers</option>
+                <option value="6">6 Passengers (Max)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="passengerName">Primary Passenger Name</label>
+              <input type="text" 
+                     id="passengerName" 
+                     name="passengerName" 
+                     class="form-control" 
+                     placeholder="Full name as on National ID / Passport" 
+                     required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
+            <div class="form-group">
+              <label class="form-label" for="passengerNic">National ID / Passport Number</label>
+              <input type="text" 
+                     id="passengerNic" 
+                     name="passengerNic" 
+                     class="form-control" 
+                     placeholder="e.g. 199512345678" 
+                     required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="contactPhone">Contact Phone Number</label>
+              <input type="tel" 
+                     id="contactPhone" 
+                     name="contactPhone" 
+                     class="form-control" 
+                     placeholder="0771234567" 
+                     required>
+            </div>
+          </div>
+
+          <!-- Calculation Summary Box -->
+          <div style="background-color: var(--color-surface-muted); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: var(--spacing-md); margin-top: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; color: var(--color-text-muted);">
+              <span>Fare Per Seat:</span>
+              <span id="farePerSeatDisplay" style="font-weight: 600; color: var(--color-text);">LKR 1,800.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--color-border); padding-top: 8px;">
+              <span style="font-weight: 700; color: var(--color-primary); font-size: 1.05rem;">Estimated Total Amount:</span>
+              <span id="totalFareDisplay" style="font-size: 1.4rem; font-weight: 800; color: var(--color-primary);">LKR 1,800.00</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <a th:href="@{/trains/search}" class="btn btn-secondary">← Back to Search</a>
+            <button type="submit" class="btn btn-accent btn-lg">
+              Continue to Payment ➔
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

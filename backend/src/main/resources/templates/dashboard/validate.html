@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin-base :: layout(~{::div.validate-wrapper})}">
+<head>
+  <title>QR Ticket Validation | Station Master</title>
+</head>
+<body>
+  <div class="validate-wrapper" style="max-width: 760px; margin: 0 auto;">
+    <!-- Page Header -->
+    <div style="text-align: center; margin-bottom: var(--spacing-xl);">
+      <h2>Station Ticket Inspection & QR Scanner</h2>
+      <p style="color: var(--color-text-muted);">Scan passenger QR codes to verify authenticity and mark tickets as boarded</p>
+    </div>
+
+    <!-- Scanner & Manual Entry Card -->
+    <div class="card scanner-card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="justify-content: center;">
+        <h3 class="card-title">Live QR Viewfinder</h3>
+      </div>
+
+      <div class="card-body">
+        <!-- Live Video Viewport Container -->
+        <div class="scanner-viewport-wrapper">
+          <video id="qrVideo" playsinline></video>
+          <div class="scanner-overlay">
+            <div class="scanner-laser"></div>
+          </div>
+        </div>
+
+        <div id="scannerStatus" style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">
+          Camera stopped. Click Start Camera or enter ticket ID manually below.
+        </div>
+
+        <!-- Camera Controls -->
+        <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: var(--spacing-xl);">
+          <button id="startCameraBtn" type="button" class="btn btn-accent">
+            <span>📷</span> Start Camera
+          </button>
+          <button id="stopCameraBtn" type="button" class="btn btn-secondary" style="display: none;">
+            <span>⏹️</span> Stop Camera
+          </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin: var(--spacing-lg) 0;">
+          <div style="flex: 1; height: 1px; background: var(--color-border);"></div>
+          <span style="font-size: 0.82rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600;">Or Enter Code Manually</span>
+          <div style="flex: 1; height: 1px; background: var(--color-border);"></div>
+        </div>
+
+        <!-- Manual Ticket Entry Form -->
+        <form id="manualValidateForm">
+          <div class="form-group" style="margin-bottom: var(--spacing-md);">
+            <div class="input-icon-group">
+              <span class="icon">🔍</span>
+              <input type="text" 
+                     id="ticketNumberInput" 
+                     class="form-control form-control-lg" 
+                     placeholder="e.g. TKT-2026-98210" 
+                     required 
+                     style="font-family: var(--font-mono); font-size: 1.1rem; text-align: center;">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <span>✓</span> Validate & Board Passenger
+          </button>
+        </form>
+
+        <!-- Loading Spinner -->
+        <div id="validateSpinner" style="display: none; margin-top: 16px; text-align: center; color: var(--color-primary); font-weight: 600;">
+          Validating ticket against railway reservation database...
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= VALID RESULT CARD (INITIALLY HIDDEN) ================= -->
+    <div id="validationResultValid" class="card" style="display: none; border: 2px solid var(--color-success); margin-bottom: var(--spacing-xl); animation: fadeIn 0.3s ease;">
+      <div class="card-header" style="background-color: var(--color-success-light); color: var(--color-success-dark); border-bottom-color: #a9dfbf;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">✅</span>
+          <strong style="font-size: 1.1rem;">TICKET VALID • MARKED AS BOARDED</strong>
+        </div>
+        <span class="badge badge-success">Boarded</span>
+      </div>
+
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); font-size: 0.95rem;">
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Ticket Number:</span>
+            <div id="resTicketNo" style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary); font-size: 1.15rem;">TKT-884920</div>
+          </div>
+
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Passenger Name:</span>
+            <div id="resPassengerName" style="font-weight: 700; color: var(--color-primary);">Kasun Perera</div>
+          </div>
+
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Train Service:</span>
+            <div id="resTrainName" style="font-weight: 600;">Udarata Menike (Exp 1015)</div>
+          </div>
+
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Route:</span>
+            <div id="resRoute" style="font-weight: 600;">Colombo Fort ➔ Kandy</div>
+          </div>
+
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Class & Allocated Seat:</span>
+            <div id="resSeatInfo" style="font-weight: 600;">1st Class AC (Seat A12)</div>
+          </div>
+
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Scheduled Travel Date:</span>
+            <div id="resTravelDate" style="font-weight: 600;">Today</div>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--spacing-lg); text-align: right;">
+          <button id="resetValidationBtn" type="button" class="btn btn-secondary btn-sm">
+            Scan Next Ticket
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= INVALID RESULT CARD (INITIALLY HIDDEN) ================= -->
+    <div id="validationResultInvalid" class="card" style="display: none; border: 2px solid var(--color-danger); margin-bottom: var(--spacing-xl); animation: fadeIn 0.3s ease;">
+      <div class="card-header" style="background-color: var(--color-danger-light); color: var(--color-danger-dark); border-bottom-color: #f5b7b1;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">❌</span>
+          <strong style="font-size: 1.1rem;">INVALID OR EXPIRED TICKET</strong>
+        </div>
+        <span class="badge badge-danger">Denied</span>
+      </div>
+
+      <div class="card-body">
+        <p id="invalidReasonText" style="color: var(--color-danger-dark); font-size: 0.95rem; font-weight: 600; margin-bottom: 12px;">
+          This ticket has already been used or cannot be found in the reservation system.
+        </p>
+        <div style="text-align: right;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="resetScannerUI();">
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- External jsQR library CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <!-- QR Scanner Application Script -->
+  <script th:src="@{/js/qr-scanner.js}" src="/js/qr-scanner.js"></script>
+</body>
+</html>

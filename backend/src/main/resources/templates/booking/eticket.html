@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.eticket-wrapper})}">
+<head>
+  <title>Your E-Ticket | TrainBook</title>
+</head>
+<body>
+  <div class="eticket-wrapper container">
+    <!-- Success Notification Banner -->
+    <div class="alert alert-success" style="max-width: 780px; margin: 0 auto var(--spacing-lg);">
+      <span style="font-size: 1.3rem;">🎉</span>
+      <div>
+        <strong>Booking Confirmed & E-Ticket Issued!</strong>
+        <p style="margin: 0; font-size: 0.85rem;">A confirmation email and SMS with your digital boarding pass has been sent.</p>
+      </div>
+    </div>
+
+    <!-- ================= REALISTIC E-TICKET CARD ================= -->
+    <div class="ticket-container">
+      <!-- Ticket Top Header -->
+      <div class="ticket-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.8rem;">🚂</span>
+          <div>
+            <div class="brand">TrainBook • Sri Lanka Railways</div>
+            <div style="font-size: 0.78rem; opacity: 0.85;">Official Electronic Passenger Ticket</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <span class="ticket-type">E-TICKET / BOARDING PASS</span>
+          <div style="font-size: 0.85rem; font-family: var(--font-mono); font-weight: 700; margin-top: 4px;" 
+               th:text="${ticket != null and ticket.ticketNumber != null ? ticket.ticketNumber : 'TKT-2026-98210'}">
+            TKT-2026-98210
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket Main Body -->
+      <div class="ticket-body">
+        <!-- Status & Route Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--spacing-md); border-bottom: 2px solid var(--color-border-light); margin-bottom: var(--spacing-lg);">
+          <div>
+            <span style="font-size: 0.8rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 600;">Train Service</span>
+            <h2 style="margin: 0; color: var(--color-primary);" th:text="${ticket != null and ticket.trainName != null ? ticket.trainName : 'Udarata Menike (Exp 1015)'}">
+              Udarata Menike (Exp 1015)
+            </h2>
+          </div>
+          <div>
+            <span class="badge badge-valid" th:if="${ticket == null or ticket.status == null or ticket.status == 'CONFIRMED' or ticket.status == 'VALID'}">
+              ● VALID / CONFIRMED
+            </span>
+            <span class="badge badge-boarded" th:if="${ticket != null and ticket.status == 'BOARDED'}">
+              ● PASSENGER BOARDED
+            </span>
+            <span class="badge badge-cancelled" th:if="${ticket != null and ticket.status == 'CANCELLED'}">
+              ● CANCELLED
+            </span>
+          </div>
+        </div>
+
+        <!-- 3x2 Grid of Ticket Info -->
+        <div class="ticket-grid">
+          <!-- Item 1: Passenger -->
+          <div class="ticket-item">
+            <span class="label">Passenger Name</span>
+            <span class="value" th:text="${ticket != null and ticket.passengerName != null ? ticket.passengerName : 'Kasun Perera'}">Kasun Perera</span>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${ticket != null and ticket.passengerNic != null ? 'NIC: ' + ticket.passengerNic : 'NIC: 199623849102'}">NIC: 199623849102</span>
+          </div>
+
+          <!-- Item 2: Origin Station -->
+          <div class="ticket-item">
+            <span class="label">From Station</span>
+            <span class="value" th:text="${ticket != null and ticket.origin != null ? ticket.origin : 'Colombo Fort'}">Colombo Fort</span>
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--color-accent);" th:text="${ticket != null and ticket.departureTime != null ? ticket.departureTime : '05:55 AM'}">05:55 AM</span>
+          </div>
+
+          <!-- Item 3: Destination Station -->
+          <div class="ticket-item">
+            <span class="label">To Station</span>
+            <span class="value" th:text="${ticket != null and ticket.destination != null ? ticket.destination : 'Kandy'}">Kandy</span>
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--color-accent);" th:text="${ticket != null and ticket.arrivalTime != null ? ticket.arrivalTime : '09:20 AM'}">09:20 AM</span>
+          </div>
+
+          <!-- Item 4: Travel Date -->
+          <div class="ticket-item">
+            <span class="label">Travel Date</span>
+            <span class="value" th:text="${ticket != null and ticket.travelDate != null ? ticket.travelDate : '2026-08-18'}">2026-08-18</span>
+          </div>
+
+          <!-- Item 5: Class & Seats -->
+          <div class="ticket-item">
+            <span class="label">Class & Seats</span>
+            <span class="value">
+              <span th:text="${ticket != null and ticket.seatClass != null ? ticket.seatClass : 'FIRST'}">FIRST</span> Class
+              (<span th:text="${ticket != null and ticket.seatCount != null ? ticket.seatCount + ' Seats' : '1 Seat'}">1 Seat</span>)
+            </span>
+            <span style="font-size: 0.8rem; color: var(--color-primary-light); font-weight: 600;" 
+                  th:text="${ticket != null and ticket.seatNumbers != null ? 'Allocated: ' + ticket.seatNumbers : 'Allocated: Car 02 / A12'}">
+              Allocated: Car 02 / A12
+            </span>
+          </div>
+
+          <!-- Item 6: Total Fare -->
+          <div class="ticket-item">
+            <span class="label">Fare Paid</span>
+            <span class="value" style="color: var(--color-success);" 
+                  th:text="${ticket != null and ticket.totalAmount != null ? 'LKR ' + #numbers.formatDecimal(ticket.totalAmount, 1, 'COMMA', 2, 'POINT') : 'LKR 1,800.00'}">
+              LKR 1,800.00 (PAID)
+            </span>
+          </div>
+        </div>
+
+        <!-- Perforation Notch Line -->
+        <div class="ticket-perforation">
+          <div class="ticket-perforation-line"></div>
+        </div>
+
+        <!-- Ticket Footer & QR Code Section -->
+        <div class="ticket-footer">
+          <div style="text-align: left; max-width: 440px;">
+            <div style="font-weight: 700; font-size: 0.88rem; color: var(--color-primary); margin-bottom: 4px;">
+              Digital Ticket Verification
+            </div>
+            <p style="font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.4;">
+              Please present this QR code to the station conductor or ticket barrier staff before boarding. Valid photo ID must be presented upon inspection.
+            </p>
+            <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-text-light); margin-top: 8px;">
+              Security Hash: 8FA92-B810-77C02-SLIIT-2026
+            </div>
+          </div>
+
+          <!-- QR Code Container -->
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <div class="ticket-qr">
+              <!-- Real dynamic QR endpoint with SVG fallback -->
+              <img th:if="${ticket != null and ticket.id != null}" 
+                   th:src="@{/api/tickets/{id}/qr(id=${ticket.id})}" 
+                   alt="Ticket QR Code"
+                   onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TKT-2026-98210';">
+              <img th:unless="${ticket != null and ticket.id != null}" 
+                   src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TKT-2026-98210" 
+                   alt="Sample QR">
+            </div>
+            <span style="font-size: 0.72rem; color: var(--color-text-muted); font-weight: 600;">Scan at Barrier</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ACTION BUTTONS ================= -->
+    <div style="max-width: 780px; margin: var(--spacing-xl) auto 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--spacing-md);">
+      <a th:href="@{/passenger/bookings}" class="btn btn-secondary">
+        ← View All My Bookings
+      </a>
+
+      <div style="display: flex; gap: var(--spacing-sm);">
+        <button type="button" class="btn btn-outline" onclick="window.print();">
+          <span>🖨️</span> Print Ticket
+        </button>
+        <a th:if="${ticket != null and ticket.id != null}" 
+           th:href="@{/payment/ticket/{id}/download(id=${ticket.id})}" 
+           class="btn btn-primary">
+          <span>📥</span> Download PDF
+        </a>
+        <a th:unless="${ticket != null and ticket.id != null}" 
+           th:href="@{/trains/search}" 
+           class="btn btn-accent">
+          Book Another Train
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
