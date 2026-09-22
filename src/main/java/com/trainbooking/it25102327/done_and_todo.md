@@ -32,6 +32,19 @@
   - `TrainController.java`: Endpoints for `/`, `/trains/search`, `/trains/fleet` (alias `/trains/manage`), `/trains/routes`, `/trains/routes/add`, `/trains/routes/{id}/delete`, `/trains`, `/trains/{id}`, `/trains/{id}/delete`, `/trains/{id}/status`.
   - `ScheduleController.java`: Endpoints for `/trains/schedules` (alias `/schedules`), `/schedules` (create), `/schedules/{id}`, `/schedules/{id}/delete`, `/schedules/seasonal/override`, `/schedules/maintenance/block`.
 
+
+- [x] **Thymeleaf UI Views (3-Page Modular Admin Architecture)**:
+  - `it25102327/fleet.html` (Page 1): Rolling stock registry, seat capacities, edit prefill form, status toggle, and safe delete.
+  - `it25102327/schedules.html` (Page 2): Master timetables, departure/arrival schedules, platform assignments, seasonal overrides, maintenance blocks, edit form, and safe delete.
+  - `it25102327/routes.html` (Page 3): Railway route corridor management, add/delete route corridors, platform allocations, and interactive real-time dynamic pricing simulator widget.
+  - `it25102327/search.html`: Public train search, date picker, station autocomplete, and live availability results display.
+- [x] **Unit Testing (JUnit 5 + Mockito)**:
+  - `TrainServiceTest.java`: Verified train listing, lookup by ID, creation, status update, cascade deletion, and schedule search mapping.
+  - `ScheduleServiceTest.java`: Verified schedule listing, lookup by ID, creation, update, cascade deletion, platform conflict detection, dynamic pricing calculation, seasonal timetable overrides, and maintenance block conflict alerts.
+- [x] **Bug Fixes & Refactoring**:
+  - **Edit Bug Resolved**: Moved `<script>` tags inside the Thymeleaf layout fragment wrappers (`fleet-wrapper`, `schedules-wrapper`, `manage-trains-wrapper`), fixing `populateEditTrain()` and `populateEditSchedule()` not being included in the rendered HTML.
+  - **Delete Bug Resolved**: Implemented hierarchical cascade deletion: `BoardingLog` ➔ `Ticket` ➔ `Payment` ➔ `Booking` ➔ `Schedule` ➔ `Train`. Deleting seeded or newly created trains/schedules now succeeds without MySQL foreign key constraint violations.
+  - **UI Ergonomics**: Replaced monolithic manage page with 3 dedicated pages linked by a sticky sub-navigation tab bar and sidebar links.
 ---
 
 ## ✅ DONE
@@ -47,16 +60,5 @@
 
 ## 📋 TODO (Upcoming Enhancements)
 
-- [x] **Thymeleaf UI Views (3-Page Modular Admin Architecture)**:
-  - `it25102327/fleet.html` (Page 1): Rolling stock registry, seat capacities, edit prefill form, status toggle, and safe delete.
-  - `it25102327/schedules.html` (Page 2): Master timetables, departure/arrival schedules, platform assignments, seasonal overrides, maintenance blocks, edit form, and safe delete.
-  - `it25102327/routes.html` (Page 3): Railway route corridor management, add/delete route corridors, platform allocations, and interactive real-time dynamic pricing simulator widget.
-  - `it25102327/search.html`: Public train search, date picker, station autocomplete, and live availability results display.
-- [x] **Unit Testing (JUnit 5 + Mockito)**:
-  - `TrainServiceTest.java`: Verified train listing, lookup by ID, creation, status update, cascade deletion, and schedule search mapping.
-  - `ScheduleServiceTest.java`: Verified schedule listing, lookup by ID, creation, update, cascade deletion, platform conflict detection, dynamic pricing calculation, seasonal timetable overrides, and maintenance block conflict alerts.
-- [x] **Bug Fixes & Refactoring**:
-  - **Edit Bug Resolved**: Moved `<script>` tags inside the Thymeleaf layout fragment wrappers (`fleet-wrapper`, `schedules-wrapper`, `manage-trains-wrapper`), fixing `populateEditTrain()` and `populateEditSchedule()` not being included in the rendered HTML.
-  - **Delete Bug Resolved**: Implemented hierarchical cascade deletion: `BoardingLog` ➔ `Ticket` ➔ `Payment` ➔ `Booking` ➔ `Schedule` ➔ `Train`. Deleting seeded or newly created trains/schedules now succeeds without MySQL foreign key constraint violations.
-  - **UI Ergonomics**: Replaced monolithic manage page with 3 dedicated pages linked by a sticky sub-navigation tab bar and sidebar links.
+
 
