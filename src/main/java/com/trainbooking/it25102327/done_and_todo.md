@@ -7,20 +7,7 @@
 **Templates:** `src/main/resources/templates/it25102327/`  
 **Tests:** `src/test/java/com/trainbooking/it25102327/`  
 
----
 
-## ✅ DONE
-- [x] **Use Case Specification (Lab 03)**: Documented UC-02 master schedules, platform allocations, dynamic pricing, seasonal overrides, and maintenance blocks.
-- [x] **Activity Diagram (Lab 04)**: Modeled route input, platform configuration, parallel seasonal/maintenance setup, conflict review, and real-time database push.
-
----
-
-## ⏳ IN PROGRESS (Current Phase)
-- All planned tasks, bug fixes, and feature modularization completed.
-
----
-
-## 📋 TODO (Upcoming Enhancements)
 - [x] Coordinator dashboard metrics synchronization with UC-06.
 - [x] Real-time fleet live status endpoint `/api/trains/live-status` feeding departure boards.
 - [x] Operational status update propagation to UC-05 passenger notification engine.
@@ -44,6 +31,22 @@
 - [x] **Controller Layer**:
   - `TrainController.java`: Endpoints for `/`, `/trains/search`, `/trains/fleet` (alias `/trains/manage`), `/trains/routes`, `/trains/routes/add`, `/trains/routes/{id}/delete`, `/trains`, `/trains/{id}`, `/trains/{id}/delete`, `/trains/{id}/status`.
   - `ScheduleController.java`: Endpoints for `/trains/schedules` (alias `/schedules`), `/schedules` (create), `/schedules/{id}`, `/schedules/{id}/delete`, `/schedules/seasonal/override`, `/schedules/maintenance/block`.
+
+---
+
+## ✅ DONE
+- [x] **Use Case Specification (Lab 03)**: Documented UC-02 master schedules, platform allocations, dynamic pricing, seasonal overrides, and maintenance blocks.
+- [x] **Activity Diagram (Lab 04)**: Modeled route input, platform configuration, parallel seasonal/maintenance setup, conflict review, and real-time database push.
+
+---
+
+## ⏳ IN PROGRESS (Current Phase)
+- All planned tasks, bug fixes, and feature modularization completed.
+
+---
+
+## 📋 TODO (Upcoming Enhancements)
+
 - [x] **Thymeleaf UI Views (3-Page Modular Admin Architecture)**:
   - `it25102327/fleet.html` (Page 1): Rolling stock registry, seat capacities, edit prefill form, status toggle, and safe delete.
   - `it25102327/schedules.html` (Page 2): Master timetables, departure/arrival schedules, platform assignments, seasonal overrides, maintenance blocks, edit form, and safe delete.
