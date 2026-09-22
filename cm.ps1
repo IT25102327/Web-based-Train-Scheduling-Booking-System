@@ -8,7 +8,7 @@ $commit_message = "Update - $current_time"
 git add .
 
 # Commit with the automatically generated message.
-git commit -m "API INIT"
+git commit -m "Security config and web mcn"
 
 # Push the changes to the 'IT25102327' branch of the 'origin' remote.
 git push -u origin IT25102327
