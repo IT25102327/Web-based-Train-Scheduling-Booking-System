@@ -9,7 +9,7 @@ git add .
 
 
 # Commit with the automatically generated message.
-git commit -m "Setup models - make schedule and train model"
+git commit -m "Setup repo"
 
 # Push the changes to the 'IT25102327' branch of the 'origin' remote.
 git push -u origin IT25102327
