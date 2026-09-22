@@ -159,6 +159,11 @@
           <span>🖨️</span> Print Ticket
         </button>
         <a th:if="${ticket != null and ticket.id != null}" 
+           th:href="@{/payment/receipt/{id}/download(id=${ticket.id})}" 
+           class="btn btn-outline" title="Official Tax Invoice & Payment Receipt">
+          <span>📄</span> Tax Receipt
+        </a>
+        <a th:if="${ticket != null and ticket.id != null}" 
            th:href="@{/payment/ticket/{id}/download(id=${ticket.id})}" 
            class="btn btn-primary">
           <span>📥</span> Download PDF

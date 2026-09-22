@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin-base :: layout(~{::div.dashboard-wrapper})}">
+<head>
+  <title>Turnstile & Boarding Gate Audit Logs | Admin Console</title>
+</head>
+<body>
+  <div class="dashboard-wrapper">
+    <!-- Header with Quick Action Buttons -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg); flex-wrap: wrap; gap: var(--spacing-md);">
+      <div>
+        <h2>Turnstile & Boarding Gate Audit Logs</h2>
+        <p style="color: var(--color-text-muted);">Real-time audit records of QR/barcode scans at station entry gates and boarding turnstiles</p>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a th:href="@{/dashboard}" class="btn btn-secondary btn-sm">
+          <span>📊</span> Back to Dashboard
+        </a>
+        <a th:href="@{/dashboard/validate}" class="btn btn-accent btn-sm">
+          <span>📱</span> Validate Ticket
+        </a>
+      </div>
+    </div>
+
+    <!-- Boarding Logs Table Card -->
+    <div class="card">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Latest 50 Turnstile Scan Events</h3>
+        <span class="badge badge-info" th:text="${logs != null ? logs.size() + ' Logs' : '0 Logs'}">0 Logs</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Ticket No</th>
+              <th>Passenger</th>
+              <th>Train Service</th>
+              <th>Station / Gate</th>
+              <th>Validation Status</th>
+              <th>Notes / Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${logs == null or logs.empty}">
+              <td colspan="7" style="text-align: center; color: var(--color-text-muted); padding: var(--spacing-xl);">
+                <span>ℹ️</span> No boarding logs recorded yet. Use the <a th:href="@{/dashboard/validate}">Ticket Validator</a> to scan passenger tickets.
+              </td>
+            </tr>
+
+            <tr th:each="log : ${logs}">
+              <td style="font-family: var(--font-mono); font-size: 0.85rem;" th:text="${log.scannedAt != null ? #temporals.format(log.scannedAt, 'yyyy-MM-dd HH:mm:ss') : 'N/A'}">
+                2026-08-18 05:45:12
+              </td>
+              <td>
+                <span style="font-family: var(--font-mono); font-weight: 700;" th:text="${log.scannedTicketNumber}">TKT-2026-0001</span>
+              </td>
+              <td th:text="${log.ticket != null and log.ticket.booking != null and log.ticket.booking.passengerName != null ? log.ticket.booking.passengerName : 'N/A'}">
+                Kasun Perera
+              </td>
+              <td>
+                <span th:if="${log.ticket != null}" th:text="${log.ticket.trainName}">
+                  Udarata Menike (1015)
+                </span>
+                <span th:if="${log.ticket == null}" style="color: var(--color-text-muted);">
+                  —
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-secondary" th:text="${log.stationCode != null ? log.stationCode : 'CMB'}">CMB</span>
+              </td>
+              <td>
+                <span th:if="${log.scanResult != null and log.scanResult.name() == 'VALID'}" class="badge badge-success">
+                  ✅ Allowed
+                </span>
+                <span th:if="${log.scanResult != null and log.scanResult.name() == 'DUPLICATE'}" class="badge badge-warning">
+                  ⚠️ Already Boarded
+                </span>
+                <span th:if="${log.scanResult != null and log.scanResult.name() == 'CANCELLED'}" class="badge badge-danger">
+                  ❌ Cancelled
+                </span>
+                <span th:if="${log.scanResult != null and log.scanResult.name() == 'NOT_FOUND'}" class="badge badge-danger">
+                  ❌ Invalid / Not Found
+                </span>
+              </td>
+              <td style="font-size: 0.88rem; color: var(--color-text-muted);" 
+                  th:text="${log.scanResult != null and log.scanResult.name() == 'VALID' ? 'Passage Granted / Checked-in' : (log.scanResult != null and log.scanResult.name() == 'DUPLICATE' ? 'Duplicate scan rejected at turnstile' : (log.scanResult != null and log.scanResult.name() == 'CANCELLED' ? 'Booking cancelled / Refunded' : 'Unrecognized ticket QR barcode'))}">
+                Boarding verified
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -25,6 +25,26 @@
       </div>
     </div>
 
+    <!-- Error / Decline Message -->
+    <div class="alert alert-danger" th:if="${errorMessage != null or param.declined != null}" style="margin-bottom: var(--spacing-md);">
+      <span style="font-size: 1.2rem;">⚠️</span>
+      <span th:text="${errorMessage != null ? errorMessage : 'Transaction was declined by payment gateway. Please retry with a valid card or cancel before the 10-minute hold expires.'}">
+        Payment declined.
+      </span>
+    </div>
+
+    <!-- 10-Minute Temporary Reservation Timer Banner -->
+    <div id="paymentTimerBanner" style="background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; color: #8d6e63; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">⏱️</span>
+        <div>
+          <strong style="color: #bf360c; font-size: 0.95rem;">Temporary Seat Lock Active</strong>
+          <div style="font-size: 0.78rem; color: #795548;">Complete payment before timeout to prevent seats from being released.</div>
+        </div>
+      </div>
+      <div style="font-family: var(--font-mono); font-weight: 800; font-size: 1.25rem; color: #d84315; background: #ffffff; padding: 4px 12px; border-radius: 4px; border: 1px solid #ffcc80;" id="timerDisplay">10:00</div>
+    </div>
+
     <!-- ================= BOOKING SUMMARY CARD ================= -->
     <div class="card" style="margin-bottom: var(--spacing-lg);">
       <div class="card-header">
@@ -160,17 +180,52 @@
             </div>
           </div>
 
+          <!-- Simulation Notice -->
+          <div style="background: #eef2f7; border: 1px solid #d0d7de; border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: var(--spacing-md); font-size: 0.8rem; color: #4b5563;">
+            <span>💡 <strong>Demo Simulation Tip:</strong> Enter card ending with <code>0000</code> or CVV <code>000</code> to test card decline and retry error workflow.</span>
+          </div>
+
           <!-- Security Check -->
           <div style="margin-bottom: var(--spacing-lg); font-size: 0.85rem; color: var(--color-text-muted); display: flex; align-items: center; gap: 6px;">
             <span>🛡️</span> 256-bit TLS Encrypted simulated transaction
           </div>
 
-          <button type="submit" class="btn btn-primary btn-block btn-lg">
-            <span>🔒</span> Pay & Generate E-Ticket Now
+          <div style="display: flex; gap: var(--spacing-md); align-items: center;">
+            <button type="submit" class="btn btn-primary btn-lg" style="flex: 2;">
+              <span>🔒</span> Pay & Generate E-Ticket Now
+            </button>
+          </div>
+        </form>
+
+        <!-- Cancel Reservation & Release Seats Form -->
+        <form th:action="@{/booking/{id}/cancel(id=${booking != null ? booking.id : 1})}" method="post" style="margin-top: 12px;">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <button type="submit" class="btn btn-secondary btn-block btn-sm" onclick="return confirm('Cancel this reservation and release your held seats back to public inventory?');">
+            ✕ Cancel Reservation & Release Seats
           </button>
         </form>
       </div>
     </div>
   </div>
+
+  <script>
+    let secondsLeft = 600;
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) {
+      const timerInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          timerDisplay.innerText = "EXPIRED";
+          alert("Your 10-minute temporary seat lock window has expired. The held seats will now be released back to public inventory.");
+          window.location.href = "/trains/search";
+          return;
+        }
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+  </script>
 </body>
 </html>

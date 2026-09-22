@@ -41,6 +41,11 @@
               <span>🔍</span> Search Trains
             </a>
           </li>
+          <li>
+            <a class="nav-link" th:href="@{/notifications/map}">
+              <span>🗺️</span> Live Map
+            </a>
+          </li>
           <li sec:authorize="isAuthenticated()">
             <a class="nav-link" th:href="@{/passenger/bookings}">
               <span>🎫</span> My Bookings

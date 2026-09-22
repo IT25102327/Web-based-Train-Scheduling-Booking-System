@@ -27,9 +27,8 @@
                            name="origin" 
                            class="form-control" 
                            list="stationList"
-                           th:value="${param.origin != null ? param.origin : ''}" 
-                           placeholder="e.g. Colombo Fort" 
-                           required>
+                           th:value="${origin != null ? origin : (param.origin != null ? param.origin : '')}" 
+                           placeholder="e.g. Colombo Fort (Optional)">
                   </div>
                 </div>
 
@@ -43,9 +42,8 @@
                            name="destination" 
                            class="form-control" 
                            list="stationList"
-                           th:value="${param.destination != null ? param.destination : ''}" 
-                           placeholder="e.g. Kandy" 
-                           required>
+                           th:value="${destination != null ? destination : (param.destination != null ? param.destination : '')}" 
+                           placeholder="e.g. Kandy">
                   </div>
                 </div>
 
@@ -110,7 +108,7 @@
           <div>
             <h2>Available Trains</h2>
             <p style="color: var(--color-text-muted);" 
-               th:text="${'Showing ' + (trainResults.size()) + ' train schedule(s) for ' + (param.origin != null ? param.origin : 'Selected Route') + ' to ' + (param.destination != null ? param.destination : '') + ' on ' + (param.date != null ? param.date : 'selected date')}">
+               th:text="${'Showing ' + (trainResults.size()) + ' train schedule(s) for ' + (origin != null and !origin.isBlank() ? origin : 'Any Station') + ' ➔ ' + (destination != null and !destination.isBlank() ? destination : 'Any Station') + ' on ' + (date != null ? date : 'selected date')}">
               Showing available trains for your route
             </p>
           </div>

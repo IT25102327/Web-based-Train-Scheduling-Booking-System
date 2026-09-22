@@ -5,12 +5,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 /**
  * Main entry point for the Train Scheduling and Booking System Spring Boot application.
  *
  * @author SLIIT Software Engineering Team
  * @version 1.0.0
  */
+@EnableAsync
+@EnableScheduling
 @SpringBootApplication
 public class TrainBookingApplication {
 

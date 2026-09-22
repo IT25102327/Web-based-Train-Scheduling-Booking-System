@@ -18,6 +18,9 @@
         <a th:href="@{/trains/manage#addNewTrainSection}" class="btn btn-secondary btn-sm">
           <span>🚆</span> Add Train
         </a>
+        <a th:href="@{/dashboard/boarding-logs}" class="btn btn-secondary btn-sm">
+          <span>📋</span> Turnstile Logs
+        </a>
         <a th:href="@{/notifications/status}" class="btn btn-secondary btn-sm">
           <span>⚠️</span> Update Status
         </a>
@@ -27,15 +30,15 @@
       </div>
     </div>
 
-    <!-- ================= 4 STATS CARDS ROW ================= -->
-    <div class="stats-grid">
+    <!-- ================= 5 STATS CARDS ROW ================= -->
+    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));">
       <!-- Card 1: Total Bookings -->
       <div class="stat-card">
         <div class="stat-icon accent">
           <span>🎫</span>
         </div>
         <div class="stat-meta">
-          <div class="stat-value" th:text="${stats != null and stats.totalBookings != null ? stats.totalBookings : '1,428'}">
+          <div id="valTotalBookings" class="stat-value" th:text="${stats != null and stats.totalBookings != null ? stats.totalBookings : '1,428'}">
             1,428
           </div>
           <div class="stat-label">Total Bookings</div>
@@ -48,7 +51,7 @@
           <span>💰</span>
         </div>
         <div class="stat-meta">
-          <div class="stat-value" th:text="${stats != null and stats.todayRevenue != null ? 'LKR ' + stats.todayRevenue : 'LKR 482,500'}">
+          <div id="valTodayRevenue" class="stat-value" th:text="${stats != null and stats.todayRevenue != null ? 'LKR ' + stats.todayRevenue : 'LKR 482,500'}">
             LKR 482,500
           </div>
           <div class="stat-label">Today's Revenue</div>
@@ -61,7 +64,7 @@
           <span>🚆</span>
         </div>
         <div class="stat-meta">
-          <div class="stat-value" th:text="${stats != null and stats.activeTrains != null ? stats.activeTrains : '24'}">
+          <div id="valActiveTrains" class="stat-value" th:text="${stats != null and stats.activeTrains != null ? stats.activeTrains : '24'}">
             24
           </div>
           <div class="stat-label">Active Train Services</div>
@@ -74,10 +77,23 @@
           <span>👥</span>
         </div>
         <div class="stat-meta">
-          <div class="stat-value" th:text="${stats != null and stats.totalPassengers != null ? stats.totalPassengers : '3,890'}">
+          <div id="valTotalPassengers" class="stat-value" th:text="${stats != null and stats.totalPassengers != null ? stats.totalPassengers : '3,890'}">
             3,890
           </div>
           <div class="stat-label">Registered Passengers</div>
+        </div>
+      </div>
+
+      <!-- Card 5: Boarded Passengers -->
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #e8f5e9; color: #2e7d32;">
+          <span>✅</span>
+        </div>
+        <div class="stat-meta">
+          <div id="valBoardedPassengers" class="stat-value" th:text="${stats != null and stats.boardedPassengers != null ? stats.boardedPassengers : '0'}">
+            0
+          </div>
+          <div class="stat-label">Boarded at Gates</div>
         </div>
       </div>
     </div>
@@ -251,6 +267,35 @@
           }
         });
       }
+
+      // 3. Real-time Live Stats Auto-Polling (every 10s)
+      function pollDashboardLiveStats() {
+        fetch('/api/dashboard/stats/live')
+          .then(res => {
+            if (!res.ok) throw new Error('Live stat fetch error');
+            return res.json();
+          })
+          .then(data => {
+            if (!data) return;
+            const bElem = document.getElementById('valTotalBookings');
+            if (bElem && data.totalBookings !== undefined) bElem.textContent = Number(data.totalBookings).toLocaleString();
+
+            const rElem = document.getElementById('valTotalRevenue');
+            if (rElem && data.totalRevenue !== undefined) rElem.textContent = 'LKR ' + Number(data.totalRevenue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            const tElem = document.getElementById('valActiveTrains');
+            if (tElem && data.activeTrains !== undefined) tElem.textContent = Number(data.activeTrains).toLocaleString();
+
+            const pElem = document.getElementById('valTotalPassengers');
+            if (pElem && data.totalPassengers !== undefined) pElem.textContent = Number(data.totalPassengers).toLocaleString();
+
+            const gElem = document.getElementById('valBoardedPassengers');
+            if (gElem && data.boardedPassengers !== undefined) gElem.textContent = Number(data.boardedPassengers).toLocaleString();
+          })
+          .catch(err => console.debug('Dashboard polling silently skipped:', err));
+      }
+
+      setInterval(pollDashboardLiveStats, 10000);
     });
   </script>
 </body>

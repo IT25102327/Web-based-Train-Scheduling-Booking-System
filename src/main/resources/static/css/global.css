@@ -260,6 +260,89 @@ p:last-child { margin-bottom: 0; }
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.35);
 }
 
+/* Sidebar Dropdown & Submenu (Native Details / Summary & Button Support) */
+.sidebar-dropdown {
+  position: relative;
+}
+
+summary.sidebar-dropdown-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  outline: none;
+  width: 100%;
+}
+
+summary.sidebar-dropdown-summary::-webkit-details-marker,
+summary.sidebar-dropdown-summary::marker {
+  display: none;
+}
+
+.sidebar-dropdown .dropdown-arrow {
+  font-size: 0.75rem;
+  transition: transform var(--transition-fast);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+details.sidebar-dropdown[open] .dropdown-arrow,
+.sidebar-dropdown.open .dropdown-arrow {
+  transform: rotate(180deg);
+  color: #ffffff;
+}
+
+details.sidebar-dropdown[open] > summary,
+.sidebar-dropdown.open .sidebar-dropdown-btn {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.sidebar-submenu {
+  list-style: none;
+  padding: 4px 0 6px 16px;
+  margin: 0;
+  display: none;
+}
+
+details.sidebar-dropdown[open] .sidebar-submenu,
+.sidebar-dropdown.open .sidebar-submenu {
+  display: block;
+}
+
+.sidebar-subitem {
+  margin-bottom: 2px;
+}
+
+.sidebar-sublink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+  font-size: 0.86rem;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  border-left: 2px solid transparent;
+}
+
+.sidebar-sublink:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(3px);
+  border-left-color: var(--color-accent);
+}
+
+.sidebar-sublink.active {
+  color: #ffffff;
+  background-color: rgba(52, 152, 219, 0.25);
+  border-left: 2px solid var(--color-accent);
+  font-weight: 600;
+}
+
 .sidebar-footer {
   padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid rgba(255, 255, 255, 0.08);

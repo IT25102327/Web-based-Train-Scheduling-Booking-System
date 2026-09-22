@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/admin-base :: layout(~{::div.routes-wrapper})}">
+<head>
+  <title>Routes & Station Pricing | Admin Console</title>
+</head>
+<body>
+  <div class="routes-wrapper">
+    <!-- Sub-navigation Tabs across the 3 Management Pages -->
+    <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--color-border); margin-bottom: var(--spacing-lg); padding-bottom: 8px; flex-wrap: wrap;">
+      <a th:href="@{/trains/fleet}" class="btn btn-outline btn-sm">
+        <span>🚆</span> 1. Registered Fleet & Capacities
+      </a>
+      <a th:href="@{/trains/schedules}" class="btn btn-outline btn-sm">
+        <span>📅</span> 2. Timetables & Schedules
+      </a>
+      <a th:href="@{/trains/routes}" class="btn btn-primary btn-sm" style="font-weight: 700;">
+        <span>🗺️</span> 3. Routes & Station Pricing
+      </a>
+    </div>
+
+    <!-- Header with Quick Action Buttons -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg); flex-wrap: wrap; gap: var(--spacing-md);">
+      <div>
+        <h2>Railway Route Network & Dynamic Fare Pricing</h2>
+        <p style="color: var(--color-text-muted); margin: 0;">Manage Sri Lanka railway line segments, station platforms, and simulate dynamic distance tariffs</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a href="#addNewRouteSection" class="btn btn-primary">
+          <span>➕</span> Add New Route
+        </a>
+      </div>
+    </div>
+
+    <!-- Route Network Quick Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+      <div class="card" style="padding: var(--spacing-md); border-left: 4px solid var(--color-primary);">
+        <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600;">ACTIVE NETWORK ROUTES</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: var(--color-primary);" th:text="${routes != null ? routes.size() : 0}">0</div>
+      </div>
+      <div class="card" style="padding: var(--spacing-md); border-left: 4px solid #3498db;">
+        <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600;">BASE DISTANCE TARIFF</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #3498db;">LKR 5.00<span style="font-size: 0.9rem; font-weight: normal; color: var(--color-text-muted);"> /km</span></div>
+      </div>
+      <div class="card" style="padding: var(--spacing-md); border-left: 4px solid #9b59b6;">
+        <div style="font-size: 0.8rem; color: var(--color-text-muted); font-weight: 600;">1ST CLASS MULTIPLIER</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #9b59b6;">1.8x <span style="font-size: 0.85rem; font-weight: normal; color: var(--color-text-muted);">(Luxury AC)</span></div>
+      </div>
+    </div>
+
+    <!-- ================= 1. RAILWAY ROUTES TABLE ================= -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Railway Network Route Corridors</h3>
+        <span class="badge badge-primary" th:text="${routes != null ? routes.size() + ' Routes' : '0 Routes'}">0 Routes</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Route ID</th>
+              <th>Origin Station</th>
+              <th>Destination Station</th>
+              <th>Distance (km)</th>
+              <th>Default Platform</th>
+              <th>Estimated Base 2nd / 1st Fare</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${routes == null or routes.empty}">
+              <td colspan="7" style="text-align: center; padding: 32px; color: var(--color-text-muted);">
+                No routes configured yet. Use the form below to add a new railway route corridor.
+              </td>
+            </tr>
+
+            <tr th:each="r : ${routes}">
+              <td>
+                <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);" 
+                      th:text="${'#RT-' + r.id}">#RT-1</span>
+              </td>
+              <td>
+                <span style="font-weight: 700; color: var(--color-text-dark);" th:text="${r.origin}">Colombo Fort</span>
+              </td>
+              <td>
+                <span style="font-weight: 700; color: var(--color-primary);" th:text="${r.destination}">Badulla</span>
+              </td>
+              <td>
+                <span th:text="${(r.distanceKm != null ? r.distanceKm : 100) + ' km'}">290 km</span>
+              </td>
+              <td>
+                <span class="badge badge-info" th:text="${r.defaultPlatform != null ? r.defaultPlatform : 'Platform 1'}">Platform 1</span>
+              </td>
+              <td>
+                <span style="font-size: 0.9rem;" th:text="${'LKR ' + (r.distanceKm != null ? r.distanceKm * 5 : 500) + ' / LKR ' + (r.distanceKm != null ? (r.distanceKm * 5 * 18 / 10) : 900)}">
+                  LKR 500 / 900
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <form th:action="@{/trains/routes/{id}/delete(id=${r.id})}" method="post" style="display: inline; margin: 0;" onsubmit="return confirm('Delete this route? All timetables operating on this route will also be safely deleted.');">
+                  <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                  <button type="submit" class="btn btn-danger btn-sm" title="Delete Route">
+                    🗑️ Delete
+                  </button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================= 2. ADD NEW RAILWAY ROUTE ================= -->
+    <div id="addNewRouteSection" class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header">
+        <h3 class="card-title">🗺️ Add New Railway Corridor Route</h3>
+      </div>
+      <div class="card-body">
+        <form th:action="@{/trains/routes/add}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--spacing-md);">
+            <div class="form-group">
+              <label class="form-label" for="routeOrigin">Origin Station</label>
+              <input type="text" id="routeOrigin" name="origin" class="form-control" placeholder="e.g. Colombo Fort" required list="stationsList">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="routeDestination">Destination Station</label>
+              <input type="text" id="routeDestination" name="destination" class="form-control" placeholder="e.g. Galle" required list="stationsList">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="routeDistanceKm">Track Distance (km)</label>
+              <input type="number" id="routeDistanceKm" name="distanceKm" class="form-control" min="1" placeholder="e.g. 115" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="routeDefaultPlatform">Default Station Platform</label>
+              <select id="routeDefaultPlatform" name="defaultPlatform" class="form-select">
+                <option value="Platform 1">Platform 1</option>
+                <option value="Platform 2">Platform 2</option>
+                <option value="Platform 3">Platform 3</option>
+                <option value="Platform 4">Platform 4</option>
+                <option value="Platform 5">Platform 5</option>
+              </select>
+            </div>
+          </div>
+
+          <datalist id="stationsList">
+            <option value="Colombo Fort"></option>
+            <option value="Kandy"></option>
+            <option value="Galle"></option>
+            <option value="Matara"></option>
+            <option value="Badulla"></option>
+            <option value="Nanu Oya"></option>
+            <option value="Jaffna"></option>
+            <option value="Anuradhapura"></option>
+            <option value="Batticaloa"></option>
+            <option value="Trincomalee"></option>
+            <option value="Ella"></option>
+          </datalist>
+
+          <div style="display: flex; justify-content: flex-end; gap: var(--spacing-sm); margin-top: var(--spacing-md);">
+            <button type="reset" class="btn btn-secondary">Clear</button>
+            <button type="submit" class="btn btn-primary">Save Railway Route</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ================= 3. DYNAMIC PRICING SIMULATOR WIDGET ================= -->
+    <div class="card" style="border: 2px solid var(--color-primary); margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="background: rgba(15, 45, 78, 0.04); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 class="card-title" style="margin: 0;">⚡ Dynamic Station Tariff Simulator</h3>
+          <small style="color: var(--color-text-muted);">Real-time tariff calculator based on distance, class multiplier, rush-hour spikes, and weekend surge</small>
+        </div>
+        <span class="badge badge-primary">Dynamic Pricing Engine</span>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-md); align-items: end;">
+          <div class="form-group">
+            <label class="form-label" for="simDistance">Distance (km)</label>
+            <input type="number" id="simDistance" class="form-control" value="121" min="1" oninput="runFareSimulation()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="simClass">Travel Class</label>
+            <select id="simClass" class="form-select" onchange="runFareSimulation()">
+              <option value="SECOND">Second Class (1.0x)</option>
+              <option value="FIRST">First Class AC (1.8x)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="simTime">Departure Time</label>
+            <input type="time" id="simTime" class="form-control" value="07:30" onchange="runFareSimulation()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="simDay">Day of Travel</label>
+            <select id="simDay" class="form-select" onchange="runFareSimulation()">
+              <option value="MONDAY">Monday</option>
+              <option value="TUESDAY">Tuesday</option>
+              <option value="WEDNESDAY">Wednesday</option>
+              <option value="THURSDAY">Thursday</option>
+              <option value="FRIDAY">Friday (Afternoon Peak)</option>
+              <option value="SATURDAY">Saturday</option>
+              <option value="SUNDAY">Sunday (Weekend Surge)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: 8px; padding: var(--spacing-md); margin-top: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">Active Surge Factors:</div>
+            <div id="simSurgeFactors" style="font-weight: 600; color: var(--color-primary); font-size: 0.95rem; margin-top: 4px;">
+              Rush-hour surge applied (+15%)
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.85rem; color: var(--color-text-muted);">Calculated Final Dynamic Fare:</div>
+            <div id="simResultFare" style="font-size: 2rem; font-weight: 800; color: #e05624;">
+              LKR 700.00
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive script INSIDE routes-wrapper -->
+    <script>
+      function runFareSimulation() {
+        const dist = parseFloat(document.getElementById('simDistance').value) || 100;
+        const seatClass = document.getElementById('simClass').value;
+        const timeVal = document.getElementById('simTime').value || '10:00';
+        const day = document.getElementById('simDay').value;
+
+        let fare = dist * 5.0; // Base LKR 5.00/km
+        const factors = [];
+
+        // Class multiplier
+        if (seatClass === 'FIRST') {
+          fare *= 1.8;
+          factors.push('1st Class AC (1.8x)');
+        } else {
+          factors.push('2nd Class Standard (1.0x)');
+        }
+
+        // Weekend surge
+        if (day === 'SUNDAY') {
+          fare *= 1.25;
+          factors.push('Sunday Holiday Surge (+25%)');
+        } else if (day === 'FRIDAY') {
+          const parts = timeVal.split(':');
+          const hr = parseInt(parts[0], 10);
+          if (hr >= 15) {
+            fare *= 1.25;
+            factors.push('Friday Evening Weekend Surge (+25%)');
+          }
+        }
+
+        // Peak commuter hours
+        const parts = timeVal.split(':');
+        const totalMin = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        const morningPeak = totalMin >= (6 * 60 + 30) && totalMin <= (8 * 60 + 30);
+        const eveningPeak = totalMin >= (16 * 60 + 30) && totalMin <= (18 * 60 + 30);
+
+        if (morningPeak || eveningPeak) {
+          fare *= 1.15;
+          factors.push('Peak Commuter Hours (+15%)');
+        }
+
+        const roundedFare = Math.round(fare / 10.0) * 10.0;
+        document.getElementById('simResultFare').textContent = 'LKR ' + roundedFare.toFixed(2);
+        document.getElementById('simSurgeFactors').textContent = factors.join(' • ');
+      }
+
+      // Initialize on load
+      document.addEventListener('DOMContentLoaded', runFareSimulation);
+      runFareSimulation();
+    </script>
+  </div>
+</body>
+</html>

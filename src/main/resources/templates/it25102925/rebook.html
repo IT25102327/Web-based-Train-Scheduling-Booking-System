@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.rebook-page-wrapper})}">
+<head>
+  <title>Complimentary Train Rebooking | TrainBook</title>
+</head>
+<body>
+  <div class="rebook-page-wrapper container container-sm">
+    <!-- Header -->
+    <div style="margin-bottom: var(--spacing-lg);">
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: #fee2e2; color: #b91c1c; padding: 4px 12px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.85rem; margin-bottom: 8px;">
+        <span>⚠️</span> Service Disruption Compensation
+      </div>
+      <h2>Complimentary 1-Click Rebooking</h2>
+      <p style="color: var(--color-text-muted);">
+        Your scheduled train has been cancelled. Select an alternative departure below to transfer your reservation at <strong>zero additional charge (LKR 0.00)</strong>.
+      </p>
+    </div>
+
+    <!-- Error message if invalid token -->
+    <div class="card" th:if="${errorMessage != null}" style="text-align: center; padding: var(--spacing-xl);">
+      <div style="font-size: 3rem; margin-bottom: 12px;">❌</div>
+      <h3 style="color: var(--color-danger);">Unable to Process Rebooking</h3>
+      <p style="color: var(--color-text-muted); margin-bottom: var(--spacing-md);" th:text="${errorMessage}">
+        Link is expired or invalid.
+      </p>
+      <a th:href="@{/trains/search}" class="btn btn-primary">Browse All Trains</a>
+    </div>
+
+    <!-- Active Rebooking Flow -->
+    <div th:if="${errorMessage == null}">
+      <!-- Cancelled Booking Card -->
+      <div class="card" style="margin-bottom: var(--spacing-lg); border-left: 4px solid var(--color-danger);">
+        <div class="card-header" style="background: #fff5f5;">
+          <h3 class="card-title" style="color: var(--color-danger);">Cancelled Reservation Details</h3>
+          <span class="badge badge-cancelled">Cancelled Service</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); font-size: 0.9rem;">
+            <div>
+              <span style="color: var(--color-text-muted); display: block;">Original Train:</span>
+              <strong style="color: var(--color-primary);" th:text="${booking != null and booking.trainName != null ? booking.trainName : 'Udarata Menike'}">Udarata Menike</strong>
+            </div>
+            <div>
+              <span style="color: var(--color-text-muted); display: block;">Route:</span>
+              <strong th:text="${booking != null and booking.origin != null and booking.destination != null ? booking.origin + ' ➔ ' + booking.destination : 'Colombo Fort ➔ Kandy'}">Colombo Fort ➔ Kandy</strong>
+            </div>
+            <div>
+              <span style="color: var(--color-text-muted); display: block;">Travel Date:</span>
+              <strong th:text="${booking != null and booking.travelDate != null ? booking.travelDate : '2026-08-18'}">2026-08-18</strong>
+            </div>
+            <div>
+              <span style="color: var(--color-text-muted); display: block;">Compensation Balance:</span>
+              <strong style="color: var(--color-success);">100% Transfer Credit (LKR 0.00 Due)</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alternative Trains List -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Available Alternative Trains on Same Route</h3>
+        </div>
+        <div class="card-body">
+          <div th:if="${alternatives == null or alternatives.empty}" style="text-align: center; padding: 24px; color: var(--color-text-muted);">
+            No alternative schedules found on this specific corridor today. Please contact station staff or check back shortly.
+          </div>
+
+          <div th:each="alt : ${alternatives}" 
+               style="border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: var(--spacing-md); margin-bottom: var(--spacing-md); display: flex; justify-content: space-between; align-items: center; background: #fafbfc;">
+            <div>
+              <div style="font-weight: 700; color: var(--color-primary); font-size: 1.1rem;" th:text="${alt.train != null ? alt.train.trainName : 'Alternative Express'}">
+                Podi Menike (Exp 1005)
+              </div>
+              <div style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 4px;">
+                <span th:text="${'Departure: ' + alt.departureTime + ' | Arrival: ' + alt.arrivalTime}">Departure: 08:30 AM | Arrival: 11:45 AM</span>
+                <span> • </span>
+                <span class="badge badge-ontime">Available</span>
+              </div>
+            </div>
+
+            <form th:action="@{/rebooking/claim/{token}(token=${token})}" method="post" style="margin: 0;">
+              <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+              <input type="hidden" name="newScheduleId" th:value="${alt.id}" />
+              <button type="submit" class="btn btn-accent btn-sm">
+                <span>🔄</span> Transfer Seat (Free)
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

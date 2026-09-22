@@ -34,6 +34,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (resetValidationBtn) {
     resetValidationBtn.addEventListener('click', resetScannerUI);
   }
+
+  // Network connectivity drop detection
+  const offlineBanner = document.getElementById('offlineBanner');
+  window.addEventListener('offline', () => {
+    if (offlineBanner) offlineBanner.style.display = 'flex';
+  });
+  window.addEventListener('online', () => {
+    if (offlineBanner) offlineBanner.style.display = 'none';
+  });
 });
 
 async function startScanner() {
@@ -164,17 +173,29 @@ async function validateTicket(ticketData) {
 
     if (validateSpinner) validateSpinner.style.display = 'none';
 
-    if (response.ok) {
-      const data = await response.json();
-      showValidResult(data);
+    let data = null;
+    try {
+      data = await response.json();
+    } catch (e) {
+      console.warn('Failed to parse JSON response', e);
+    }
+
+    if (data && typeof data.valid !== 'undefined') {
+      if (data.valid) {
+        playSuccessSound();
+        showValidResult(data);
+      } else {
+        showInvalidResult(data.message || 'Invalid or Expired Ticket.');
+      }
+    } else if (response.ok) {
+      showValidResult({ ticketNumber: ticketData, passengerName: 'Passenger' });
     } else {
-      const errData = await response.json().catch(() => ({ message: 'Ticket verification failed or invalid ticket.' }));
-      showInvalidResult(errData.message || 'Invalid or Expired Ticket.');
+      showInvalidResult('Ticket verification failed. Please try again.');
     }
   } catch (err) {
+    console.error('Validation fetch error:', err);
     if (validateSpinner) validateSpinner.style.display = 'none';
-    // Fallback demonstration display for offline/simulated testing
-    simulateValidation(ticketData);
+    showInvalidResult('Network connection error. Could not connect to validation server.');
   }
 }
 
@@ -204,23 +225,6 @@ function showInvalidResult(reason) {
   resultCardInvalid.scrollIntoView({ behavior: 'smooth' });
 }
 
-function simulateValidation(ticketData) {
-  if (ticketData.toUpperCase().startsWith('INVALID') || ticketData.includes('EXPIRED')) {
-    showInvalidResult('Ticket is already redeemed or has expired.');
-  } else {
-    showValidResult({
-      ticketNumber: ticketData,
-      passengerName: 'Passenger Verified',
-      trainName: 'Express 1005 (Podimenike)',
-      origin: 'Colombo Fort',
-      destination: 'Badulla',
-      seatClass: '1st Class AC',
-      seatNumbers: 'Car 02 - Seat 14, 15',
-      travelDate: new Date().toLocaleDateString()
-    });
-  }
-}
-
 function resetScannerUI() {
   const resultCardValid = document.getElementById('validationResultValid');
   const resultCardInvalid = document.getElementById('validationResultInvalid');
@@ -233,6 +237,17 @@ function resetScannerUI() {
     ticketInput.focus();
   }
 }
+
+// Expose functions globally for table click-to-validate buttons and UI reset
+window.quickValidateTicket = function(code) {
+  const ticketInput = document.getElementById('ticketNumberInput');
+  if (ticketInput) {
+    ticketInput.value = code;
+  }
+  validateTicket(code);
+};
+window.resetScannerUI = resetScannerUI;
+window.validateTicket = validateTicket;
 
 function playSuccessSound() {
   try {

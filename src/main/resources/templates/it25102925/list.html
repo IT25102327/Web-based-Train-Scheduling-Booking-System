@@ -36,41 +36,41 @@
     <div th:if="${notifications != null and not notifications.empty}">
       <div th:each="notif : ${notifications}" 
            class="notification-item" 
-           th:classappend="${notif.read == false ? 'unread' : ''}">
+           th:classappend="${(notif.read == false or notif.isRead == false) ? 'unread' : ''}">
         
         <!-- Notification Icon -->
         <div class="notification-icon" 
-             th:style="${notif.type == 'DELAY' or notif.type == 'CANCELLED' ? 'background-color: var(--color-warning-light); color: var(--color-warning-dark);' : 'background-color: var(--color-primary-subtle); color: var(--color-primary);'}">
-          <span th:if="${notif.type == 'DELAY'}">⏱️</span>
-          <span th:if="${notif.type == 'CANCELLED'}">⚠️</span>
-          <span th:if="${notif.type == 'BOOKING' or notif.type == 'CONFIRMATION'}">🎫</span>
-          <span th:if="${notif.type == null or (notif.type != 'DELAY' and notif.type != 'CANCELLED' and notif.type != 'BOOKING' and notif.type != 'CONFIRMATION')}">🔔</span>
+             th:style="${(notif.displayType == 'DELAY' or notif.displayType == 'CANCELLED') ? 'background-color: var(--color-warning-light); color: var(--color-warning-dark);' : 'background-color: var(--color-primary-subtle); color: var(--color-primary);'}">
+          <span th:if="${notif.displayType == 'DELAY'}">⏱️</span>
+          <span th:if="${notif.displayType == 'CANCELLED'}">⚠️</span>
+          <span th:if="${notif.displayType == 'BOOKING'}">🎫</span>
+          <span th:if="${notif.displayType != 'DELAY' and notif.displayType != 'CANCELLED' and notif.displayType != 'BOOKING'}">🔔</span>
         </div>
 
         <!-- Notification Content -->
         <div style="flex: 1;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-            <strong style="color: var(--color-primary); font-size: 0.98rem;" th:text="${notif.title != null ? notif.title : 'Train Schedule Update'}">
+            <strong style="color: var(--color-primary); font-size: 0.98rem;" th:text="${notif.title != null ? notif.title : (notif.subject != null ? notif.subject : 'Train Schedule Update')}">
               Schedule Delay Notice: Express 1015
             </strong>
             <span style="font-size: 0.78rem; color: var(--color-text-muted); font-family: var(--font-sans);" 
-                  th:text="${notif.createdAt != null ? notif.createdAt : '10 minutes ago'}">
+                  th:text="${notif.sentAt != null ? #temporals.format(notif.sentAt, 'yyyy-MM-dd HH:mm') : (notif.createdAt != null and not #strings.isEmpty(notif.createdAt) ? notif.createdAt : 'Recently')}">
               10 minutes ago
             </span>
           </div>
 
           <p style="color: var(--color-text); font-size: 0.88rem; margin-bottom: 6px; line-height: 1.5;" 
-             th:text="${notif.message != null ? notif.message : 'Express Train #1015 is running with an estimated delay of 25 minutes due to track maintenance near Polgahawela.'}">
+             th:text="${notif.message != null ? notif.message : 'Express Train service has a schedule update.'}">
             Express Train #1015 is running with an estimated delay of 25 minutes due to track maintenance near Polgahawela.
           </p>
 
           <div style="display: flex; align-items: center; gap: 12px; font-size: 0.78rem;">
-            <span class="badge badge-warning" th:if="${notif.type == 'DELAY'}">Delay Alert</span>
-            <span class="badge badge-danger" th:if="${notif.type == 'CANCELLED'}">Service Cancelled</span>
-            <span class="badge badge-success" th:if="${notif.type == 'BOOKING'}">Booking Confirmed</span>
-            <span class="badge badge-info" th:if="${notif.type == 'SYSTEM'}">System Announcement</span>
+            <span class="badge badge-warning" th:if="${notif.displayType == 'DELAY'}">Delay Alert</span>
+            <span class="badge badge-danger" th:if="${notif.displayType == 'CANCELLED'}">Service Cancelled</span>
+            <span class="badge badge-success" th:if="${notif.displayType == 'BOOKING'}">Booking Confirmed</span>
+            <span class="badge badge-info" th:if="${notif.displayType != 'DELAY' and notif.displayType != 'CANCELLED' and notif.displayType != 'BOOKING'}">Notice</span>
 
-            <span th:if="${notif.trainNumber != null}" style="color: var(--color-text-muted); font-family: var(--font-mono);" th:text="${'Train #' + notif.trainNumber}">
+            <span th:if="${notif.trainNumber != null and not #strings.isEmpty(notif.trainNumber)}" style="color: var(--color-text-muted); font-family: var(--font-mono);" th:text="${'Train #' + notif.trainNumber}">
               Train #1015
             </span>
           </div>

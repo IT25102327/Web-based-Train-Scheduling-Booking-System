@@ -125,6 +125,43 @@
                 </div>
               </div>
 
+              <!-- Notification Preferences -->
+              <div style="border-top: 1px solid var(--color-border); padding-top: var(--spacing-md); margin-top: var(--spacing-md);">
+                <h4 style="font-size: 1rem; color: var(--color-primary); margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 8px;">
+                  <span>🔔</span> Multi-Channel Travel Alerts
+                </h4>
+                <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: var(--spacing-md);">
+                  Choose how you wish to receive real-time notifications about train delays, platform changes, and cancellations.
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                    <input type="checkbox" name="notifyByEmail" value="true" th:checked="${user == null or user.notifyByEmail == null or user.notifyByEmail}">
+                    <div>
+                      <strong style="display: block; font-size: 0.9rem;">Email Alerts</strong>
+                      <span style="font-size: 0.8rem; color: var(--color-text-muted);">Receive booking confirmations & E-Tickets</span>
+                    </div>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                    <input type="checkbox" name="notifyBySms" value="true" th:checked="${user == null or user.notifyBySms == null or user.notifyBySms}">
+                    <div>
+                      <strong style="display: block; font-size: 0.9rem;">SMS Alerts</strong>
+                      <span style="font-size: 0.8rem; color: var(--color-text-muted);">Urgent platform change & delay text alerts</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="delayAlertThresholdMinutes">Delay Notification Threshold</label>
+                  <select id="delayAlertThresholdMinutes" name="delayAlertThresholdMinutes" class="form-control">
+                    <option value="5" th:selected="${user != null and user.delayAlertThresholdMinutes == 5}">Alert if delayed by 5+ minutes</option>
+                    <option value="15" th:selected="${user == null or user.delayAlertThresholdMinutes == null or user.delayAlertThresholdMinutes == 15}">Alert if delayed by 15+ minutes (Recommended)</option>
+                    <option value="30" th:selected="${user != null and user.delayAlertThresholdMinutes == 30}">Alert if delayed by 30+ minutes</option>
+                    <option value="60" th:selected="${user != null and user.delayAlertThresholdMinutes == 60}">Major delays only (60+ minutes)</option>
+                  </select>
+                </div>
+              </div>
+
               <div style="display: flex; justify-content: flex-end; margin-top: var(--spacing-sm);">
                 <button type="submit" class="btn btn-primary">Save Profile Changes</button>
               </div>

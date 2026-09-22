@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.board-wrapper})}">
+<head>
+  <title>Live Station Departure Board | TrainBook</title>
+</head>
+<body>
+  <div class="board-wrapper" style="padding: var(--spacing-xl) 0;">
+    <div class="container">
+      <!-- Header Banner -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xl); flex-wrap: wrap; gap: var(--spacing-md); background: linear-gradient(135deg, #0b1e33 0%, #17375e 100%); color: #ffffff; padding: var(--spacing-xl); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span style="font-size: 2rem;">🚉</span>
+            <h1 style="font-size: 1.8rem; margin: 0; color: #ffffff;">Live Station Departure Board</h1>
+          </div>
+          <p style="margin: 0; color: #a9c6e2; font-size: 0.95rem;">Real-time Sri Lanka Railways train operations & schedule status</p>
+        </div>
+
+        <div style="text-align: right;">
+          <div id="liveClock" style="font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: #ffca28;">
+            11:05:00 AM
+          </div>
+          <div style="font-size: 0.8rem; color: #a9c6e2;">Colombo Standard Time (IST)</div>
+        </div>
+      </div>
+
+      <!-- Departure Table Card -->
+      <div class="card" style="border: none; box-shadow: var(--shadow-lg);">
+        <div class="card-header" style="background: #ffffff; border-bottom: 2px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="badge badge-info" style="font-size: 0.85rem; padding: 6px 12px;">Live Transit Feed</span>
+            <span style="font-size: 0.85rem; color: var(--color-text-muted);">Auto-refreshes periodically</span>
+          </div>
+
+          <div>
+            <a th:href="@{/trains/search}" class="btn btn-primary btn-sm">
+              <span>🔍</span> Book Seats on Train
+            </a>
+          </div>
+        </div>
+
+        <div class="card-body" style="padding: 0;">
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid var(--color-border); font-size: 0.85rem; text-transform: uppercase; color: var(--color-text-muted);">
+                  <th style="padding: 14px 18px;">Train No</th>
+                  <th style="padding: 14px 18px;">Train Name</th>
+                  <th style="padding: 14px 18px;">Type</th>
+                  <th style="padding: 14px 18px; text-align: center;">Total Capacity</th>
+                  <th style="padding: 14px 18px; text-align: center;">Operational Status</th>
+                  <th style="padding: 14px 18px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody style="font-size: 0.95rem;">
+                <tr th:each="train : ${trains}" style="border-bottom: 1px solid var(--color-border); transition: background-color 0.15s ease;">
+                  <td style="padding: 16px 18px; font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);" th:text="${train.trainNumber}">
+                    1015
+                  </td>
+                  <td style="padding: 16px 18px;">
+                    <div style="font-weight: 700; color: var(--color-text-dark);" th:text="${train.trainName}">
+                      Udarata Menike
+                    </div>
+                  </td>
+                  <td style="padding: 16px 18px;">
+                    <span class="badge badge-secondary" th:text="${'1st: ' + train.firstClassSeats + ' | 2nd: ' + train.secondClassSeats}">
+                      1st: 60 | 2nd: 260
+                    </span>
+                  </td>
+                  <td style="padding: 16px 18px; text-align: center;" th:text="${train.totalSeats + ' Seats'}">
+                    320 Seats
+                  </td>
+                  <td style="padding: 16px 18px; text-align: center;">
+                    <!-- On Time -->
+                    <span th:if="${train.status == null or train.status.name() == 'ON_TIME'}" 
+                          class="badge badge-success" style="font-size: 0.85rem; padding: 6px 14px;">
+                      ● ON TIME
+                    </span>
+                    <!-- Delayed -->
+                    <span th:if="${train.status != null and train.status.name() == 'DELAYED'}" 
+                          class="badge badge-warning" style="font-size: 0.85rem; padding: 6px 14px;">
+                      ▲ DELAYED
+                    </span>
+                    <!-- Cancelled -->
+                    <span th:if="${train.status != null and train.status.name() == 'CANCELLED'}" 
+                          class="badge badge-danger" style="font-size: 0.85rem; padding: 6px 14px;">
+                      ✕ CANCELLED
+                    </span>
+                  </td>
+                  <td style="padding: 16px 18px; text-align: right;">
+                    <a th:href="@{/trains/search}" class="btn btn-secondary btn-sm" style="font-size: 0.8rem;">
+                      View Schedules
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- If no trains present -->
+                <tr th:if="${trains == null or #lists.isEmpty(trains)}">
+                  <td colspan="6" style="text-align: center; padding: 36px; color: var(--color-text-muted);">
+                    No train services currently scheduled on departure board.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Clock & Dynamic Status Auto-Polling Script -->
+  <script>
+    function updateLiveClock() {
+      const clockElem = document.getElementById('liveClock');
+      if (clockElem) {
+        const now = new Date();
+        clockElem.textContent = now.toLocaleTimeString('en-US', { hour12: true });
+      }
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+
+    // Auto-refresh departure table every 10 seconds
+    function pollLiveTrainStatus() {
+      fetch('/api/trains/live-status')
+        .then(response => {
+          if (!response.ok) throw new Error('Network response error');
+          return response.json();
+        })
+        .then(data => {
+          if (!Array.isArray(data) || data.length === 0) return;
+          const tbody = document.querySelector('tbody');
+          if (!tbody) return;
+
+          let rowsHtml = '';
+          data.forEach(train => {
+            let statusBadge = `<span class="badge badge-success" style="font-size: 0.85rem; padding: 6px 14px;">● ON TIME</span>`;
+            if (train.status === 'DELAYED') {
+              statusBadge = `<span class="badge badge-warning" style="font-size: 0.85rem; padding: 6px 14px;">▲ DELAYED</span>`;
+            } else if (train.status === 'CANCELLED') {
+              statusBadge = `<span class="badge badge-danger" style="font-size: 0.85rem; padding: 6px 14px;">✕ CANCELLED</span>`;
+            }
+
+            rowsHtml += `
+              <tr style="border-bottom: 1px solid var(--color-border); transition: background-color 0.15s ease;">
+                <td style="padding: 16px 18px; font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);">${train.trainNumber}</td>
+                <td style="padding: 16px 18px;">
+                  <div style="font-weight: 700; color: var(--color-text-dark);">${train.trainName}</div>
+                  <div style="font-size: 0.78rem; color: var(--color-text-muted);">${train.origin} ➔ ${train.destination} | Platform: <strong>${train.platform}</strong></div>
+                </td>
+                <td style="padding: 16px 18px;">
+                  <span class="badge badge-secondary">1st: ${train.firstClassSeats} | 2nd: ${train.secondClassSeats}</span>
+                </td>
+                <td style="padding: 16px 18px; text-align: center;">${train.totalSeats} Seats</td>
+                <td style="padding: 16px 18px; text-align: center;">${statusBadge}</td>
+                <td style="padding: 16px 18px; text-align: right;">
+                  <a href="/trains/search" class="btn btn-secondary btn-sm" style="font-size: 0.8rem;">Book Seats</a>
+                </td>
+              </tr>
+            `;
+          });
+          tbody.innerHTML = rowsHtml;
+        })
+        .catch(err => console.debug('Live feed polling tick:', err));
+    }
+
+    setInterval(pollLiveTrainStatus, 10000);
+  </script>
+</body>
+</html>

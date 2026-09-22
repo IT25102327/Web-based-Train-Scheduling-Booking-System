@@ -75,46 +75,48 @@
             <tr th:each="booking : ${bookings}">
               <td>
                 <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary);" 
-                      th:text="${booking.ticketNumber != null ? booking.ticketNumber : ('TKT-2026-' + booking.id)}">
-                  TKT-2026-9821
+                      th:text="${booking.ticketNumber != null ? booking.ticketNumber : ('TKT-2026-' + (booking.id != null ? booking.id : '1001'))}">
+                  TKT-2026-00001
                 </span>
                 <div style="font-size: 0.75rem; color: var(--color-text-muted);" 
-                     th:text="${booking.bookingDate != null ? 'Booked: ' + booking.bookingDate : 'Booked: 2026-08-16'}">
+                     th:text="${booking.bookingDate != null and not #strings.isEmpty(booking.bookingDate) ? 'Booked: ' + booking.bookingDate : (booking.bookedAt != null ? 'Booked: ' + #temporals.format(booking.bookedAt, 'yyyy-MM-dd') : 'Booked: 2026-08-16')}">
                   Booked: 2026-08-16
                 </div>
               </td>
               <td>
-                <strong style="color: var(--color-primary);" th:text="${booking.trainName != null ? booking.trainName : 'Udarata Menike'}">Udarata Menike</strong>
-                <div style="font-size: 0.82rem; color: var(--color-text-muted);" th:text="${(booking.origin != null ? booking.origin : 'Colombo Fort') + ' ➔ ' + (booking.destination != null ? booking.destination : 'Kandy')}">
-                  Colombo Fort ➔ Kandy
+                <strong style="color: var(--color-primary);" th:text="${booking.trainName != null and not #strings.isEmpty(booking.trainName) ? booking.trainName : 'Udarata Menike'}">Udarata Menike</strong>
+                <div style="font-size: 0.82rem; color: var(--color-text-muted);" th:text="${(booking.origin != null and not #strings.isEmpty(booking.origin) ? booking.origin : 'Colombo Fort') + ' &rarr; ' + (booking.destination != null and not #strings.isEmpty(booking.destination) ? booking.destination : 'Kandy')}">
+                  Colombo Fort &rarr; Kandy
                 </div>
               </td>
               <td>
                 <span style="font-weight: 600;" th:text="${booking.travelDate != null ? booking.travelDate : '2026-08-18'}">2026-08-18</span>
-                <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${booking.departureTime != null ? booking.departureTime : '05:55 AM'}">05:55 AM</div>
+                <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${booking.departureTime != null and not #strings.isEmpty(booking.departureTime) ? booking.departureTime : '05:55 AM'}">05:55 AM</div>
               </td>
               <td>
-                <span th:text="${booking.seatCount != null ? booking.seatCount + ' seat(s)' : '1 seat'}">1 seat</span>
+                <span th:text="${(booking.seatCount != null ? booking.seatCount : (booking.numberOfSeats != null ? booking.numberOfSeats : 1)) + ' seat(s)'}">1 seat(s)</span>
               </td>
               <td>
                 <span class="badge badge-info" th:text="${booking.seatClass != null ? booking.seatClass : 'FIRST'}">FIRST</span>
               </td>
               <td>
                 <strong style="color: var(--color-primary);" 
-                        th:text="${booking.totalAmount != null ? 'LKR ' + #numbers.formatDecimal(booking.totalAmount, 1, 'COMMA', 2, 'POINT') : 'LKR 1,800.00'}">
+                        th:text="${booking.totalAmount != null ? 'LKR ' + #numbers.formatDecimal(booking.totalAmount, 1, 'COMMA', 2, 'POINT') : 'LKR 0.00'}">
                   LKR 1,800.00
                 </strong>
               </td>
               <td>
-                <span class="badge badge-confirmed" th:if="${booking.status == null or booking.status == 'CONFIRMED' or booking.status == 'VALID'}">Confirmed</span>
-                <span class="badge badge-boarded" th:if="${booking.status == 'BOARDED'}">Boarded</span>
-                <span class="badge badge-warning" th:if="${booking.status == 'PENDING'}">Pending</span>
-                <span class="badge badge-cancelled" th:if="${booking.status == 'CANCELLED'}">Cancelled</span>
+                <span class="badge badge-confirmed" th:if="${#strings.toString(booking.status) == 'CONFIRMED'}">Confirmed</span>
+                <span class="badge badge-warning" th:if="${#strings.toString(booking.status) == 'PENDING'}">Pending</span>
+                <span class="badge badge-cancelled" th:if="${#strings.toString(booking.status) == 'CANCELLED'}">Cancelled</span>
               </td>
               <td style="text-align: right;">
-                <div class="table-actions" style="justify-content: flex-end;">
-                  <a th:href="@{/booking/ticket/{id}(id=${booking.id})}" class="btn btn-outline btn-sm">
-                    <span>🎫</span> View Ticket
+                <div class="table-actions" style="justify-content: flex-end; gap: 6px;">
+                  <a th:href="@{/booking/ticket/{id}(id=${booking.id})}" class="btn btn-outline btn-sm" title="View Digital Boarding Pass">
+                    <span>🎫</span> Ticket
+                  </a>
+                  <a th:href="@{/payment/ticket/{id}/download(id=${booking.id})}" class="btn btn-secondary btn-sm" title="Download Official Railway PDF">
+                    <span>📥</span> PDF
                   </a>
                 </div>
               </td>

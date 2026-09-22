@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initFormLoadingStates();
   initMobileNavigation();
   initSidebarToggle();
+  initSidebarDropdown();
   initSeatCalculator();
 });
 
@@ -16,13 +17,40 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initNavHighlighting() {
   const currentPath = window.location.pathname;
-  const navLinks = document.querySelectorAll('.nav-link, .sidebar-link');
+  const navLinks = document.querySelectorAll('.nav-link, .sidebar-link, .sidebar-sublink');
 
   navLinks.forEach(link => {
     const href = link.getAttribute('href');
     if (href && (href === currentPath || (currentPath.startsWith(href) && href !== '/' && href !== '#'))) {
       link.classList.add('active');
     }
+  });
+
+  // Auto-expand Manage Trains dropdown if viewing any train or schedule page
+  const manageTrainsDropdown = document.getElementById('manageTrainsNavDropdown');
+  if (manageTrainsDropdown) {
+    if (currentPath.startsWith('/trains') || currentPath.startsWith('/schedules')) {
+      if (manageTrainsDropdown.tagName === 'DETAILS') {
+        manageTrainsDropdown.open = true;
+      } else {
+        manageTrainsDropdown.classList.add('open');
+      }
+    }
+  }
+}
+
+/**
+ * Initializes sidebar dropdown listeners for non-details elements
+ */
+function initSidebarDropdown() {
+  const dropdownBtns = document.querySelectorAll('.sidebar-dropdown-btn');
+  dropdownBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const parent = btn.closest('.sidebar-dropdown');
+      if (parent && parent.tagName !== 'DETAILS') {
+        parent.classList.toggle('open');
+      }
+    });
   });
 }
 

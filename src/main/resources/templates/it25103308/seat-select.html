@@ -25,6 +25,18 @@
       </div>
     </div>
 
+    <!-- 10-Minute Temporary Reservation Timer Banner -->
+    <div id="countdownBanner" style="background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; color: #8d6e63; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">⏱️</span>
+        <div>
+          <strong style="color: #bf360c; font-size: 0.95rem;">10-Minute Seat Hold Window</strong>
+          <div style="font-size: 0.78rem; color: #795548;">Seats are held temporarily while you proceed with reservation details.</div>
+        </div>
+      </div>
+      <div style="font-family: var(--font-mono); font-weight: 800; font-size: 1.25rem; color: #d84315; background: #ffffff; padding: 4px 12px; border-radius: 4px; border: 1px solid #ffcc80;" id="timerDisplay">10:00</div>
+    </div>
+
     <!-- ================= TRAIN ITINERARY SUMMARY CARD ================= -->
     <div class="card" style="margin-bottom: var(--spacing-lg);">
       <div class="card-header" style="background: linear-gradient(135deg, var(--color-primary) 0%, #1a4473 100%); color: #ffffff;">
@@ -118,6 +130,60 @@
             </div>
           </div>
 
+          <!-- Stop-Sales Alert when Selected Class is Sold Out -->
+          <div id="soldOutBanner" class="alert alert-danger" style="display: none; margin-bottom: var(--spacing-md);">
+            <span style="font-size: 1.3rem;">🚫</span>
+            <div>
+              <strong>STOP-SALES: FULL CAPACITY REACHED</strong>
+              <div>No remaining seats available in this class for the selected date. Please choose another class or date.</div>
+            </div>
+          </div>
+
+          <!-- ================= INTERACTIVE VISUAL COACH SEAT MAP WIDGET ================= -->
+          <div style="margin: var(--spacing-lg) 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <strong style="color: var(--color-primary); font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                  <span>💺</span> Interactive Coach Seat Layout
+                </strong>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">Click on available seats below to select custom seat positions.</div>
+              </div>
+
+              <!-- Seat Status Legend -->
+              <div style="display: flex; gap: 12px; font-size: 0.78rem; align-items: center;">
+                <span style="display: flex; align-items: center; gap: 4px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #e8f5e9; border: 1px solid #81c784; display: inline-block;"></span> Available
+                </span>
+                <span style="display: flex; align-items: center; gap: 4px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #fff9c4; border: 1px solid #fbc02d; display: inline-block;"></span> Selected
+                </span>
+                <span style="display: flex; align-items: center; gap: 4px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #ffebee; border: 1px solid #e57373; display: inline-block;"></span> Booked / Locked
+                </span>
+              </div>
+            </div>
+
+            <!-- Visual Coach Diagram Container -->
+            <div style="background: #f1f5f9; border-radius: 8px; padding: 14px; border: 1px solid #cbd5e1; overflow-x: auto;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.8rem; font-weight: 700; color: #475569;">
+                <span>◀ Locomotive / Front</span>
+                <span>Coach 01 (Reserved Carriage)</span>
+                <span>Rear Compartment ▶</span>
+              </div>
+
+              <!-- Seat Grid Layout -->
+              <div id="seatGrid" style="display: grid; grid-template-columns: repeat(10, minmax(42px, 1fr)); gap: 8px; justify-items: center; align-items: center; min-width: 480px;">
+                <!-- Dynamically generated 20 interactive seats -->
+              </div>
+            </div>
+
+            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; flex-wrap: wrap; gap: 6px;">
+              <span>Allocated Seats: <strong id="selectedSeatsLabel" style="color: var(--color-primary); font-family: var(--font-mono);">Car 01 / S01</strong></span>
+              <span id="seatSelectionNotice" style="color: #64748b; font-size: 0.8rem;">Auto-assigned based on passenger count</span>
+            </div>
+            <input type="hidden" id="seatNumbersInput" name="seatNumbers" value="Car 01 / S01" />
+          </div>
+
           <!-- Seat Count & Primary Passenger -->
           <div style="display: grid; grid-template-columns: 1fr 2fr; gap: var(--spacing-md);">
             <div class="form-group">
@@ -179,13 +245,168 @@
 
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <a th:href="@{/trains/search}" class="btn btn-secondary">← Back to Search</a>
-            <button type="submit" class="btn btn-accent btn-lg">
+            <button id="btnSubmitBooking" type="submit" class="btn btn-accent btn-lg">
               Continue to Payment ➔
             </button>
           </div>
         </form>
       </div>
     </div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    // 10-Minute Temporary Reservation Timer
+    let secondsLeft = 600;
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) {
+      const timerInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          timerDisplay.innerText = "EXPIRED";
+          alert("Your 10-minute temporary seat lock window has expired. The held seats will now be released back to public inventory.");
+          window.location.href = "/trains/search";
+          return;
+        }
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    // Interactive Coach Seat Map Logic
+    const seatGrid = document.getElementById('seatGrid');
+    const seatCountSelect = document.getElementById('seatCount');
+    const selectedSeatsLabel = document.getElementById('selectedSeatsLabel');
+    const seatNumbersInput = document.getElementById('seatNumbersInput');
+    const farePerSeatDisplay = document.getElementById('farePerSeatDisplay');
+    const totalFareDisplay = document.getElementById('totalFareDisplay');
+    const btnSubmitBooking = document.getElementById('btnSubmitBooking');
+    const soldOutBanner = document.getElementById('soldOutBanner');
+
+    const totalCoachSeats = 20;
+    let selectedSeats = [];
+    
+    // Simulate or retrieve booked seats
+    const bookedSeatsList = /*[[${bookedFirstSeats}]]*/ ['Car 01 / S03', 'Car 01 / S07', 'Car 01 / S14'];
+
+    function renderSeatGrid() {
+      if (!seatGrid) return;
+      seatGrid.innerHTML = '';
+      const count = parseInt(seatCountSelect.value, 10) || 1;
+
+      // Ensure default selection
+      if (selectedSeats.length !== count) {
+        selectedSeats = [];
+        for (let i = 1; i <= totalCoachSeats && selectedSeats.length < count; i++) {
+          const seatNum = 'S' + (i < 10 ? '0' + i : i);
+          const fullSeat = 'Car 01 / ' + seatNum;
+          if (!bookedSeatsList || !bookedSeatsList.includes(fullSeat)) {
+            selectedSeats.push(seatNum);
+          }
+        }
+      }
+
+      for (let i = 1; i <= totalCoachSeats; i++) {
+        const seatNum = 'S' + (i < 10 ? '0' + i : i);
+        const fullSeat = 'Car 01 / ' + seatNum;
+        const isBooked = bookedSeatsList && bookedSeatsList.includes(fullSeat);
+        const isSelected = selectedSeats.includes(seatNum);
+
+        const seatBox = document.createElement('div');
+        seatBox.style.width = '42px';
+        seatBox.style.height = '42px';
+        seatBox.style.borderRadius = '6px';
+        seatBox.style.display = 'flex';
+        seatBox.style.flexDirection = 'column';
+        seatBox.style.alignItems = 'center';
+        seatBox.style.justifyContent = 'center';
+        seatBox.style.fontSize = '0.72rem';
+        seatBox.style.fontWeight = '700';
+        seatBox.style.cursor = isBooked ? 'not-allowed' : 'pointer';
+        seatBox.style.transition = 'all 0.15s ease';
+        seatBox.style.userSelect = 'none';
+
+        if (isBooked) {
+          seatBox.style.background = '#ffebee';
+          seatBox.style.border = '1.5px solid #ef5350';
+          seatBox.style.color = '#c62828';
+          seatBox.innerHTML = `<span>${seatNum}</span><span style="font-size:0.6rem;">🔒</span>`;
+        } else if (isSelected) {
+          seatBox.style.background = '#fff9c4';
+          seatBox.style.border = '2px solid #fbc02d';
+          seatBox.style.color = '#f57f17';
+          seatBox.style.boxShadow = '0 2px 6px rgba(251, 192, 45, 0.4)';
+          seatBox.innerHTML = `<span>${seatNum}</span><span style="font-size:0.6rem;">✓</span>`;
+        } else {
+          seatBox.style.background = '#e8f5e9';
+          seatBox.style.border = '1.5px solid #81c784';
+          seatBox.style.color = '#2e7d32';
+          seatBox.innerHTML = `<span>${seatNum}</span>`;
+        }
+
+        if (!isBooked) {
+          seatBox.addEventListener('click', () => {
+            const idx = selectedSeats.indexOf(seatNum);
+            if (idx > -1) {
+              if (selectedSeats.length > 1) {
+                selectedSeats.splice(idx, 1);
+                seatCountSelect.value = selectedSeats.length;
+              }
+            } else {
+              if (selectedSeats.length >= 6) {
+                alert("Maximum 6 seats may be booked per transaction.");
+                return;
+              }
+              selectedSeats.push(seatNum);
+              seatCountSelect.value = selectedSeats.length;
+            }
+            updateSeatDisplays();
+            renderSeatGrid();
+          });
+        }
+
+        seatGrid.appendChild(seatBox);
+      }
+
+      updateSeatDisplays();
+    }
+
+    function updateSeatDisplays() {
+      const formatted = selectedSeats.map(s => 'Car 01 / ' + s).join(', ');
+      if (selectedSeatsLabel) selectedSeatsLabel.innerText = formatted || 'None selected';
+      if (seatNumbersInput) seatNumbersInput.value = formatted || 'Car 01 / S01';
+
+      // Price calculation
+      const activeRadio = document.querySelector('input[name="seatClass"]:checked');
+      const unitPrice = activeRadio ? parseFloat(activeRadio.getAttribute('data-price')) || 1800 : 1800;
+      const count = selectedSeats.length || 1;
+      const total = unitPrice * count;
+
+      if (farePerSeatDisplay) {
+        farePerSeatDisplay.innerText = 'LKR ' + unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      }
+      if (totalFareDisplay) {
+        totalFareDisplay.innerText = 'LKR ' + total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      }
+    }
+
+    if (seatCountSelect) {
+      seatCountSelect.addEventListener('change', () => {
+        selectedSeats = [];
+        renderSeatGrid();
+      });
+    }
+
+    document.querySelectorAll('input[name="seatClass"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        updateSeatDisplays();
+      });
+    });
+
+    renderSeatGrid();
+    /*]]>*/
+  </script>
   </div>
 </body>
 </html>

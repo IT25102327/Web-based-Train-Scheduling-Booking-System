@@ -10,7 +10,7 @@
   
   <!-- CSS Stylesheets -->
   <link rel="stylesheet" th:href="@{/css/variables.css}" href="/css/variables.css">
-  <link rel="stylesheet" th:href="@{/css/global.css}" href="/css/global.css">
+  <link rel="stylesheet" th:href="@{/css/global.css(v=3)}" href="/css/global.css?v=3">
   
   <!-- CSRF Meta Tags for AJAX Requests -->
   <meta th:if="${_csrf}" name="_csrf" th:content="${_csrf.token}"/>
@@ -34,19 +34,67 @@
             <span>📊</span> Dashboard
           </a>
         </li>
+        <!-- Expandable Manage Trains Navigation -->
         <li class="sidebar-item">
-          <a class="sidebar-link" th:href="@{/trains/manage}">
-            <span>🚆</span> Manage Trains
-          </a>
+          <details class="sidebar-dropdown" id="manageTrainsNavDropdown">
+            <summary class="sidebar-link sidebar-dropdown-summary" id="manageTrainsSummary">
+              <span style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
+                <span>🚆</span>
+                <span>Manage Trains</span>
+              </span>
+              <span class="dropdown-arrow" style="pointer-events: none;">▾</span>
+            </summary>
+            <ul class="sidebar-submenu" id="manageTrainsSubmenu">
+              <li class="sidebar-subitem">
+                <a class="sidebar-sublink" th:href="@{/trains/fleet}">
+                  <span>🚆</span> Manage Fleet
+                </a>
+              </li>
+              <li class="sidebar-subitem">
+                <a class="sidebar-sublink" th:href="@{/trains/schedules}">
+                  <span>📅</span> Train Timetables
+                </a>
+              </li>
+              <li class="sidebar-subitem">
+                <a class="sidebar-sublink" th:href="@{/trains/routes}">
+                  <span>🗺️</span> Routes & Pricing
+                </a>
+              </li>
+            </ul>
+          </details>
         </li>
+        <!-- Expandable Train Status & Alerts Navigation -->
         <li class="sidebar-item">
-          <a class="sidebar-link" th:href="@{/notifications/status}">
-            <span>⚠️</span> Train Status & Alerts
-          </a>
+          <details class="sidebar-dropdown" id="statusAlertsNavDropdown">
+            <summary class="sidebar-link sidebar-dropdown-summary" id="statusAlertsSummary">
+              <span style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
+                <span>⚠️</span>
+                <span>Train Status & Alerts</span>
+              </span>
+              <span class="dropdown-arrow" style="pointer-events: none;">▾</span>
+            </summary>
+            <ul class="sidebar-submenu" id="statusAlertsSubmenu">
+              <li class="sidebar-subitem">
+                <a class="sidebar-sublink" th:href="@{/notifications/status}">
+                  <span>📢</span> Status & Alerts
+                </a>
+              </li>
+              <li class="sidebar-subitem">
+                <a class="sidebar-sublink" th:href="@{/admin/live-map}">
+                  <span>🗺️</span> Live Train Map
+                </a>
+              </li>
+            </ul>
+          </details>
         </li>
         <li class="sidebar-item">
           <a class="sidebar-link" th:href="@{/dashboard/validate}">
             <span>📱</span> Validate Tickets
+          </a>
+        </li>
+        <li class="sidebar-item">
+          <a class="sidebar-link" th:href="@{/dashboard/boarding-logs}">
+            <span>📋</span> Turnstile Logs
           </a>
         </li>
         <li class="sidebar-item">
@@ -133,6 +181,26 @@
   </div>
 
   <!-- Main JavaScript File -->
-  <script th:src="@{/js/main.js}" src="/js/main.js"></script>
+  <script th:src="@{/js/main.js(v=3)}" src="/js/main.js?v=3"></script>
+  <script>
+    (function() {
+      var path = window.location.pathname;
+      var dd = document.getElementById('manageTrainsNavDropdown');
+      if (dd && (path.indexOf('/trains') !== -1 || path.indexOf('/schedules') !== -1)) {
+        dd.open = true;
+      }
+      var ddStatus = document.getElementById('statusAlertsNavDropdown');
+      if (ddStatus && (path.indexOf('/notifications') !== -1 || path.indexOf('/departure-board') !== -1 || path.indexOf('/admin/live-map') !== -1)) {
+        ddStatus.open = true;
+      }
+      var links = document.querySelectorAll('.sidebar-sublink');
+      links.forEach(function(a) {
+        var href = a.getAttribute('href');
+        if (href && (href === path || (path.startsWith(href) && href !== '/'))) {
+          a.classList.add('active');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
