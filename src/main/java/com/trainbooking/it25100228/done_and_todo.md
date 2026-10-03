@@ -54,3 +54,9 @@
 - None. All planned phases and features completed!
 
 ---
+
+## 📋 TODO (Upcoming Phases)
+- [x] Automated daily revenue reconciliation with payment gateway settlement reports (`/api/dashboard/reconciliation`).
+- [x] Dedicated station turnstile audit log view (`/dashboard/boarding-logs`).
+- [x] Real-time live dashboard KPI polling (`pollDashboardLiveStats()` every 10s).
+- [x] End-to-end integration and concurrency testing across all 6 member modules.
