@@ -186,4 +186,23 @@ public class TicketValidationService {
         }
         return false;
     }
+
+    /**
+     * Deletes a ticket and its associated boarding audit logs.
+     *
+     * @param ticketId ID of the ticket to delete
+     * @return true when the ticket existed and was deleted
+     */
+    @Transactional
+    public boolean deleteTicket(Long ticketId) {
+        if (ticketId == null) return false;
+
+        Optional<Ticket> opt = ticketRepository.findById(ticketId);
+        if (opt.isEmpty()) return false;
+
+        boardingLogRepository.deleteByTicketId(ticketId);
+        ticketRepository.delete(opt.get());
+        log.info("Deleted ticket ID {} and its boarding audit logs", ticketId);
+        return true;
+    }
 }
