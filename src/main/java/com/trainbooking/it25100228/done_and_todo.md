@@ -40,7 +40,7 @@
 
 ---
 
-- [] **Phase 3 & Phase 4 - Turnstile Audit Logs, Auto-Polling & Revenue Reconciliation (100% Complete)**:
+- [x] **Phase 3 & Phase 4 - Turnstile Audit Logs, Auto-Polling & Revenue Reconciliation (100% Complete)**:
   - `DashboardService.java`: Added `getRecentBoardingLogs()` and `getReconciliationReport()` calculating daily transaction reconciliations and gateway settlements.
   - `DashboardController.java`: Added `GET /dashboard/boarding-logs` and `GET /api/dashboard/reconciliation` REST endpoint.
   - `it25100228/boarding-logs.html`: Dedicated audit view displaying the 50 most recent turnstile scan events with timestamp, ticket number, passenger, train, station/gate, and validation outcomes. Resolved property mappings (`ticket.trainName`, `ticket.booking.passengerName`, null-safe enum evaluations).
