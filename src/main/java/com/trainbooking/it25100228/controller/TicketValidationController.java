@@ -94,4 +94,23 @@ public class TicketValidationController {
         }
         return "redirect:/dashboard/validate";
     }
+
+    /**
+     * Deletes a ticket by ID and cleans up its associated boarding logs.
+     *
+     * @param id ticket ID
+     * @param redirectAttributes flash attributes
+     * @return redirect to /dashboard/validate
+     */
+    @PostMapping({"/validate/{id}/delete", "/dashboard/validate/{id}/delete"})
+    public String deleteTicket(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
+        log.info("Deleting ticket ID: {}", id);
+        boolean success = ticketValidationService.deleteTicket(id);
+        if (success) {
+            redirectAttributes.addFlashAttribute("successMessage", "Ticket #" + id + " was deleted successfully.");
+        } else {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ticket not found or could not be deleted.");
+        }
+        return "redirect:/dashboard/validate";
+    }
 }
