@@ -25,4 +25,5 @@ public class DashboardStatsDto {
     private Long todayBookings;
     private Long totalPassengers;
     private Long boardedPassengers;
+    private Long totalRefunds;
 }
