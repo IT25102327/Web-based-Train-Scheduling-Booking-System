@@ -113,4 +113,22 @@ public class TicketValidationController {
         }
         return "redirect:/dashboard/validate";
     }
+
+    /**
+     * REST API endpoint to delete a ticket by ID.
+     *
+     * @param id ticket ID
+     * @return ResponseEntity with operation status
+     */
+    @DeleteMapping("/api/tickets/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteTicketApi(@PathVariable("id") Long id) {
+        log.info("Processing API delete request for ticket ID: {}", id);
+        boolean success = ticketValidationService.deleteTicket(id);
+        if (success) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "Ticket #" + id + " deleted successfully."));
+        } else {
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", "Ticket not found or could not be deleted."));
+        }
+    }
 }
