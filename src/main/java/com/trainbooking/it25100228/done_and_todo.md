@@ -6,7 +6,7 @@
 **Priority:** 5  
 **Package:** `com.trainbooking.it25100228`  
 **Templates:** `src/main/resources/templates/it25100228/`  
-**Tests:** `src/test/java/com/trainbooking/it25100228/`  
+**Tests:** `src/test/java/com/trainbooking/it25100228/`
 
 ---
 
@@ -30,7 +30,7 @@
   - `DashboardServiceTest.java`: Verified KPI calculation and daily revenue distribution mapping.
   - `TicketValidationServiceTest.java`: 5 test cases verifying valid boarding, duplicate scan fraud prevention, non-existent ticket rejection, empty input rejection, and cancelled booking alerts.
 
-- [] **Phase 2 - Audit Logging & Boarding Security**:
+- [x] **Phase 2 - Audit Logging & Boarding Security**:
   - `BoardingLog.java` & `BoardingLogRepository.java`: Persistent audit entity tracking every gate scan attempt (VALID, DUPLICATE, NOT_FOUND, CANCELLED) with timestamp and ticket reference.
   - `TicketValidationService.java`: Comprehensive audit logging integration on every validation attempt.
   - `DashboardStatsDto.java` & `DashboardService.java`: Integrated `boardedPassengers` live metric tracking checked-in passengers for operational monitoring.
