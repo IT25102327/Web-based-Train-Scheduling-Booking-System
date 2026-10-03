@@ -26,4 +26,5 @@ public class DashboardStatsDto {
     private Long totalPassengers;
     private Long boardedPassengers;
     private Long totalRefunds;
+    private Long cancelledBookings;
 }
