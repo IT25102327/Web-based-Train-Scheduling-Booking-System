@@ -85,7 +85,7 @@ public class TicketValidationController {
      */
     @PostMapping({"/validate/{id}/reset", "/dashboard/validate/{id}/reset"})
     public String resetTicketStatus(@PathVariable("id") Long id, RedirectAttributes redirectAttributes) {
-        log.info("Resetting boarding status for ticket ID {}", id);
+        log.info("Resetting boarding status for ticket ID: {}", id);
         boolean success = ticketValidationService.resetBoardedStatus(id);
         if (success) {
             redirectAttributes.addFlashAttribute("successMessage", "Ticket status reset successfully! You can scan or validate it again.");
