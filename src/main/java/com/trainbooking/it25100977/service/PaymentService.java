@@ -19,11 +19,7 @@ import com.itextpdf.kernel.pdf.canvas.draw.SolidLine;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.borders.Border;
 import com.itextpdf.layout.borders.SolidBorder;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.Image;
-import com.itextpdf.layout.element.LineSeparator;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.element.*;
 import com.itextpdf.layout.properties.HorizontalAlignment;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
@@ -38,12 +34,19 @@ import com.trainbooking.it25103308.model.Booking;
 import com.trainbooking.it25103308.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.YearMonth;
 import java.util.UUID;
 
 /**
@@ -62,17 +65,32 @@ public class PaymentService {
     private final BookingRepository bookingRepository;
     private final com.trainbooking.it25100977.repository.RefundRepository refundRepository;
     private final com.trainbooking.it25102925.service.EmailService emailService;
+    private final com.trainbooking.it25100977.strategy.PaymentStrategyFactory paymentStrategyFactory;
 
     /**
-     * Processes simulated card payment for a pending booking.
-     * Supports failure simulation if card number ends with 0000 or CVV is 000.
+     * Processes payment for a pending booking (delegating to multipart-aware processor).
      *
      * @param bookingId booking ID
-     * @param request payment card details
-     * @return {@link Payment} entity
+     * @param request payment details
+     * @return saved Payment entity
      */
     @Transactional
     public Payment processPayment(Long bookingId, PaymentRequest request) {
+        MultipartFile slipFile = (request != null) ? request.getSlipFile() : null;
+        return processPayment(bookingId, request, slipFile);
+    }
+
+    /**
+     * Processes payment for a pending booking supporting both Credit Card (with Luhn validation)
+     * and Manual Bank Transfer / Deposit Slip upload via the GoF Strategy Pattern.
+     *
+     * @param bookingId booking ID
+     * @param request payment form details
+     * @param slipFile uploaded deposit slip or transfer receipt file
+     * @return saved Payment entity
+     */
+    @Transactional
+    public Payment processPayment(Long bookingId, PaymentRequest request, MultipartFile slipFile) {
         log.info("Processing payment for booking ID: {}", bookingId);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with ID: " + bookingId));
@@ -81,34 +99,11 @@ public class PaymentService {
             throw new IllegalStateException("Cannot process payment: Reservation has been cancelled or 10-minute hold expired.");
         }
 
-        // Decline simulation trigger (card ending in 0000 or CVV 000)
-        String cleanCard = (request.getCardNumber() != null) ? request.getCardNumber().replaceAll("\\s+", "") : "";
-        if (cleanCard.endsWith("0000") || "000".equals(request.getCvv())) {
-            log.warn("Payment declined for booking ID: {} - simulated decline criteria matched.", bookingId);
-            Payment failedPayment = Payment.builder()
-                    .booking(booking)
-                    .amount(booking.getTotalAmount())
-                    .status(Payment.PaymentStatus.FAILED)
-                    .transactionRef("FAIL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                    .build();
-            paymentRepository.save(failedPayment);
-            throw new IllegalArgumentException("Card transaction declined by payment gateway: Insufficient funds or invalid card credentials. Please retry with a valid card before your 10-minute seat lock expires.");
-        }
+        String methodStr = (request != null && request.getPaymentMethod() != null)
+                ? request.getPaymentMethod() : "CARD";
 
-        Payment payment = Payment.builder()
-                .booking(booking)
-                .amount(booking.getTotalAmount())
-                .status(Payment.PaymentStatus.COMPLETED)
-                .transactionRef("TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase())
-                .build();
-
-        Payment savedPayment = paymentRepository.save(payment);
-
-        booking.setStatus(Booking.BookingStatus.CONFIRMED);
-        bookingRepository.save(booking);
-
-        log.info("Payment completed for booking ID: {}, txn ref: {}", bookingId, savedPayment.getTransactionRef());
-        return savedPayment;
+        com.trainbooking.it25100977.strategy.PaymentStrategy strategy = paymentStrategyFactory.getStrategy(methodStr);
+        return strategy.processPayment(booking, request, slipFile);
     }
 
     /**
@@ -711,5 +706,149 @@ public class PaymentService {
      */
     public java.util.Optional<com.trainbooking.it25100977.model.Refund> getRefundByBookingId(Long bookingId) {
         return refundRepository.findByBookingId(bookingId);
+    }
+
+    /**
+     * Validates credit card number, expiration date, and CVV.
+     *
+     * @param request payment request containing card details
+     */
+    public void validateCreditCard(PaymentRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Payment details cannot be null.");
+        }
+
+        // Validate Cardholder Name
+        if (request.getCardHolderName() == null || request.getCardHolderName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Cardholder name is required.");
+        }
+
+        // Validate Card Number
+        String rawCard = request.getCardNumber();
+        if (rawCard == null || rawCard.trim().isEmpty()) {
+            throw new IllegalArgumentException("Credit card number is required.");
+        }
+
+        String cleanCard = rawCard.replaceAll("[\\s\\-]+", "");
+
+        if (!cleanCard.matches("^\\d+$")) {
+            throw new IllegalArgumentException("Invalid credit card number: Must contain only numeric digits.");
+        }
+
+        if (cleanCard.length() < 13 || cleanCard.length() > 19) {
+            throw new IllegalArgumentException("Invalid credit card number: Length must be between 13 and 19 digits.");
+        }
+
+        if (!isValidLuhn(cleanCard)) {
+            throw new IllegalArgumentException("Invalid credit card number: Checksum validation failed (Luhn Algorithm). Please check the digits and try again.");
+        }
+
+        // Validate Expiry Date
+        if (request.getExpiryMonth() != null && request.getExpiryYear() != null
+                && !request.getExpiryMonth().isBlank() && !request.getExpiryYear().isBlank()) {
+            try {
+                int month = Integer.parseInt(request.getExpiryMonth().trim());
+                int year = Integer.parseInt(request.getExpiryYear().trim());
+                if (month < 1 || month > 12) {
+                    throw new IllegalArgumentException("Invalid expiration month: Must be between 01 and 12.");
+                }
+                YearMonth currentYearMonth = YearMonth.now();
+                YearMonth cardExpiry = YearMonth.of(year, month);
+                if (cardExpiry.isBefore(currentYearMonth)) {
+                    throw new IllegalArgumentException("Credit card has expired (" + request.getExpiryMonth() + "/" + request.getExpiryYear() + ").");
+                }
+            } catch (NumberFormatException nfe) {
+                throw new IllegalArgumentException("Invalid expiration date format.");
+            }
+        }
+
+        // Validate CVV
+        if (request.getCvv() != null && !request.getCvv().trim().isEmpty()) {
+            String cleanCvv = request.getCvv().trim();
+            if (!cleanCvv.matches("^\\d{3,4}$")) {
+                throw new IllegalArgumentException("Invalid CVV/CVC code: Must be 3 or 4 numeric digits.");
+            }
+        }
+    }
+
+    /**
+     * Validates card number using the Luhn Algorithm (Mod 10 Checksum).
+     *
+     * @param cardNumber numeric card number string
+     * @return true if checksum passes, false otherwise
+     */
+    public static boolean isValidLuhn(String cardNumber) {
+        if (cardNumber == null || cardNumber.isEmpty()) {
+            return false;
+        }
+        int sum = 0;
+        boolean alternate = false;
+        for (int i = cardNumber.length() - 1; i >= 0; i--) {
+            int digit = Character.getNumericValue(cardNumber.charAt(i));
+            if (digit < 0 || digit > 9) {
+                return false;
+            }
+            if (alternate) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit = (digit % 10) + 1;
+                }
+            }
+            sum += digit;
+            alternate = !alternate;
+        }
+        return (sum % 10 == 0);
+    }
+
+    /**
+     * Retrieves payment by ID.
+     *
+     * @param id payment ID
+     * @return Payment entity
+     */
+    public Payment getPaymentById(Long id) {
+        return paymentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found with ID: " + id));
+    }
+
+    /**
+     * Reads raw bytes of an uploaded payment slip.
+     *
+     * @param paymentId payment ID
+     * @return file byte array
+     */
+    public byte[] getPaymentSlipBytes(Long paymentId) {
+        Payment payment = getPaymentById(paymentId);
+        if (payment.getSlipFilePath() == null) {
+            throw new ResourceNotFoundException("No slip uploaded for payment ID: " + paymentId);
+        }
+        try {
+            Path path = Paths.get(payment.getSlipFilePath().replaceFirst("^/", ""));
+            if (!Files.exists(path)) {
+                path = Paths.get("uploads", "slips", path.getFileName().toString());
+            }
+            if (Files.exists(path)) {
+                return Files.readAllBytes(path);
+            }
+            throw new ResourceNotFoundException("Slip file not found on disk: " + payment.getSlipFilePath());
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading payment slip: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Resolves HTTP content type for uploaded payment slip.
+     *
+     * @param paymentId payment ID
+     * @return MIME type
+     */
+    public String getPaymentSlipContentType(Long paymentId) {
+        Payment payment = getPaymentById(paymentId);
+        String fileName = payment.getSlipFileName() != null ? payment.getSlipFileName().toLowerCase() : "";
+        if (fileName.endsWith(".png")) return MediaType.IMAGE_PNG_VALUE;
+        if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return MediaType.IMAGE_JPEG_VALUE;
+        if (fileName.endsWith(".webp")) return "image/webp";
+        if (fileName.endsWith(".pdf")) return MediaType.APPLICATION_PDF_VALUE;
+        return MediaType.APPLICATION_OCTET_STREAM_VALUE;
     }
 }
