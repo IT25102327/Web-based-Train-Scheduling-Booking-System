@@ -1,6 +1,4 @@
 package com.trainbooking.it25100977.repository;
-import com.trainbooking.it25100977.model.*;
-import com.trainbooking.it25100977.dto.*;
 
 import com.trainbooking.it25100977.model.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;

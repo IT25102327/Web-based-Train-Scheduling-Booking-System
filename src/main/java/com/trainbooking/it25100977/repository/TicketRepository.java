@@ -38,7 +38,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      * @param bookingId the booking ID
      * @return list of tickets
      */
-    java.util.List<Ticket> findAllByBookingId(Long bookingId);
+    List<Ticket> findAllByBookingId(Long bookingId);
 
     /**
      * Finds a ticket by its unique ticket number string, ignoring case.
