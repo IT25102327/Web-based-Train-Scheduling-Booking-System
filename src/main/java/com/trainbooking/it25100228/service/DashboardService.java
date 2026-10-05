@@ -34,6 +34,7 @@ public class DashboardService {
     private final TrainRepository trainRepository;
     private final UserRepository userRepository;
     private final com.trainbooking.it25100228.repository.BoardingLogRepository boardingLogRepository;
+    private final com.trainbooking.it25100977.repository.RefundRepository refundRepository;
 
     /**
      * Aggregates summary statistics for display on the administrator dashboard.
@@ -82,6 +83,16 @@ public class DashboardService {
 
         long boardedPassengers = boardingLogRepository.countByScanResult(com.trainbooking.it25100228.model.BoardingLog.ScanResult.VALID);
 
+        long cancelledBookings = allBookings.stream()
+                .filter(b -> b.getStatus() == Booking.BookingStatus.CANCELLED)
+                .count();
+
+        long totalRefunds = refundRepository.findAll().stream()
+                .map(com.trainbooking.it25100977.model.Refund::getRefundAmount)
+                .filter(a -> a != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .longValue();
+
         return DashboardStatsDto.builder()
                 .totalBookings(totalBookings)
                 .totalRevenue(totalRevenue)
@@ -91,6 +102,8 @@ public class DashboardService {
                 .todayBookings(todayBookings)
                 .totalPassengers(totalPassengers)
                 .boardedPassengers(boardedPassengers)
+                .totalRefunds(totalRefunds)
+                .cancelledBookings(cancelledBookings)
                 .build();
     }
 
