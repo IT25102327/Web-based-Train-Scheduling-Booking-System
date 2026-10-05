@@ -13,7 +13,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-
 /**
  * Controller handling train schedule management endpoints for administrators.
  * Provides views and actions for listing, creating, deleting schedules,

@@ -7,14 +7,11 @@
 **Templates:** `src/main/resources/templates/it25102327/`  
 **Tests:** `src/test/java/com/trainbooking/it25102327/`  
 
+---
 
-- [x] Coordinator dashboard metrics synchronization with UC-06.
-- [x] Real-time fleet live status endpoint `/api/trains/live-status` feeding departure boards.
-- [x] Operational status update propagation to UC-05 passenger notification engine.
-- [x] Split monolithic train management UI into 3 dedicated pages.
-- [x] Resolve Edit button DOM reference error.
-- [x] Resolve Delete foreign key constraint violation.
-
+## ✅ DONE
+- [x] **Use Case Specification (Lab 03)**: Documented UC-02 master schedules, platform allocations, dynamic pricing, seasonal overrides, and maintenance blocks.
+- [x] **Activity Diagram (Lab 04)**: Modeled route input, platform configuration, parallel seasonal/maintenance setup, conflict review, and real-time database push.
 - [x] **Entity Models**:
   - `Train.java`: Fleet details (trainNumber, trainName, totalSeats, firstClassSeats, secondClassSeats, status).
   - `Route.java`: Route network (origin, destination, distanceKm, train).
@@ -31,8 +28,6 @@
 - [x] **Controller Layer**:
   - `TrainController.java`: Endpoints for `/`, `/trains/search`, `/trains/fleet` (alias `/trains/manage`), `/trains/routes`, `/trains/routes/add`, `/trains/routes/{id}/delete`, `/trains`, `/trains/{id}`, `/trains/{id}/delete`, `/trains/{id}/status`.
   - `ScheduleController.java`: Endpoints for `/trains/schedules` (alias `/schedules`), `/schedules` (create), `/schedules/{id}`, `/schedules/{id}/delete`, `/schedules/seasonal/override`, `/schedules/maintenance/block`.
-
-
 - [x] **Thymeleaf UI Views (3-Page Modular Admin Architecture)**:
   - `it25102327/fleet.html` (Page 1): Rolling stock registry, seat capacities, edit prefill form, status toggle, and safe delete.
   - `it25102327/schedules.html` (Page 2): Master timetables, departure/arrival schedules, platform assignments, seasonal overrides, maintenance blocks, edit form, and safe delete.
@@ -45,11 +40,6 @@
   - **Edit Bug Resolved**: Moved `<script>` tags inside the Thymeleaf layout fragment wrappers (`fleet-wrapper`, `schedules-wrapper`, `manage-trains-wrapper`), fixing `populateEditTrain()` and `populateEditSchedule()` not being included in the rendered HTML.
   - **Delete Bug Resolved**: Implemented hierarchical cascade deletion: `BoardingLog` ➔ `Ticket` ➔ `Payment` ➔ `Booking` ➔ `Schedule` ➔ `Train`. Deleting seeded or newly created trains/schedules now succeeds without MySQL foreign key constraint violations.
   - **UI Ergonomics**: Replaced monolithic manage page with 3 dedicated pages linked by a sticky sub-navigation tab bar and sidebar links.
----
-
-## ✅ DONE
-- [x] **Use Case Specification (Lab 03)**: Documented UC-02 master schedules, platform allocations, dynamic pricing, seasonal overrides, and maintenance blocks.
-- [x] **Activity Diagram (Lab 04)**: Modeled route input, platform configuration, parallel seasonal/maintenance setup, conflict review, and real-time database push.
 
 ---
 
@@ -59,6 +49,9 @@
 ---
 
 ## 📋 TODO (Upcoming Enhancements)
-
-
-
+- [x] Coordinator dashboard metrics synchronization with UC-06.
+- [x] Real-time fleet live status endpoint `/api/trains/live-status` feeding departure boards.
+- [x] Operational status update propagation to UC-05 passenger notification engine.
+- [x] Split monolithic train management UI into 3 dedicated pages.
+- [x] Resolve Edit button DOM reference error.
+- [x] Resolve Delete foreign key constraint violation.

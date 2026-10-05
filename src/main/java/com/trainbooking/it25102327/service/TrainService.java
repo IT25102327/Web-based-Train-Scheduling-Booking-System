@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 /**
  * Service class handling train fleet management, schedules, live status updates, and search operations.
  *

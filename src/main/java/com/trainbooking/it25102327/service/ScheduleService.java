@@ -18,7 +18,6 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
 
-
 /**
  * Service class responsible for managing train schedules, timetable lookups,
  * and schedule CRUD operations.
