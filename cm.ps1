@@ -9,7 +9,7 @@ git add .
 
 
 # Commit with the automatically generated message.
-git commit -m "adding station maping "
+git commit -m "bug fixing in maping and validation "
 
 # Push the changes to the 'IT25102327' branch of the 'origin' remote.
 git push -u origin IT25102327
