@@ -25,6 +25,36 @@
       </div>
     </div>
 
+    <!-- Error Flash Alert (e.g. seat collision or invalid seat) -->
+    <div th:if="${errorMessage != null}" class="alert alert-danger" style="margin-bottom: var(--spacing-lg);">
+      <span style="font-size: 1.3rem;">⚠️</span>
+      <div>
+        <strong>Seat Reservation Alert:</strong>
+        <div th:text="${errorMessage}">Selected seat is already reserved by another passenger. Please pick an available seat.</div>
+      </div>
+    </div>
+
+    <!-- Real-time Live Alert Toast Banner (Hidden by default, shown when seat taken) -->
+    <div id="liveSeatAlert" class="alert alert-warning" style="display: none; margin-bottom: var(--spacing-lg); transition: all 0.3s ease;">
+      <span style="font-size: 1.3rem;">⚠️</span>
+      <div>
+        <strong>Live Occupancy Update:</strong>
+        <span id="liveSeatAlertMsg">A seat you selected was just booked by another passenger. Your selection has been updated.</span>
+      </div>
+    </div>
+
+    <!-- 10-Minute Temporary Reservation Timer Banner -->
+    <div id="countdownBanner" style="background: #fff8e1; border: 1px solid #ffe082; border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; color: #8d6e63; box-shadow: var(--shadow-sm);">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.4rem;">⏱️</span>
+        <div>
+          <strong style="color: #bf360c; font-size: 0.95rem;">10-Minute Seat Hold Window</strong>
+          <div style="font-size: 0.78rem; color: #795548;">Seats are held temporarily while you proceed with reservation details.</div>
+        </div>
+      </div>
+      <div style="font-family: var(--font-mono); font-weight: 800; font-size: 1.25rem; color: #d84315; background: #ffffff; padding: 4px 12px; border-radius: 4px; border: 1px solid #ffcc80;" id="timerDisplay">10:00</div>
+    </div>
+
     <!-- ================= TRAIN ITINERARY SUMMARY CARD ================= -->
     <div class="card" style="margin-bottom: var(--spacing-lg);">
       <div class="card-header" style="background: linear-gradient(135deg, var(--color-primary) 0%, #1a4473 100%); color: #ffffff;">
@@ -74,48 +104,155 @@
           <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           
           <!-- Hidden Schedule and Date Inputs -->
-          <input type="hidden" name="scheduleId" th:value="${schedule != null and schedule.id != null ? schedule.id : (param.scheduleId != null ? param.scheduleId : 1)}" />
-          <input type="hidden" name="travelDate" th:value="${date != null ? date : (param.date != null ? param.date : '2026-08-18')}" />
+          <input type="hidden" id="formScheduleId" name="scheduleId" th:value="${schedule != null and schedule.id != null ? schedule.id : (param.scheduleId != null ? param.scheduleId : 1)}" />
+          <input type="hidden" id="formTravelDate" name="travelDate" th:value="${date != null ? date : (param.date != null ? param.date : '2026-08-18')}" />
 
           <!-- Class Selection Cards (Radio buttons) -->
           <div class="form-group">
             <label class="form-label">Select Travel Class</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md);">
               <!-- First Class Card -->
-              <label class="seat-class-card" style="display: block;">
+              <label class="seat-class-card" style="display: block; cursor: pointer;">
                 <input type="radio" 
                        name="seatClass" 
+                       id="radioClassFirst"
                        value="FIRST" 
                        th:data-price="${schedule != null and schedule.firstClassFare != null ? schedule.firstClassFare : 1800}" 
                        checked 
                        style="margin-right: 6px;">
                 <strong style="color: var(--color-primary); font-size: 1.05rem;">1st Class (AC)</strong>
                 <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 4px;">
-                  Air-Conditioned, Reserved Seating, Reclining Seats
+                  Air-Conditioned, Reserved Seating, 2+1 Luxury Layout
                 </div>
                 <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-weight: 800; color: var(--color-primary);" th:text="${'LKR ' + (schedule != null and schedule.firstClassFare != null ? schedule.firstClassFare : '1,800.00')}">LKR 1,800.00</span>
-                  <span class="badge badge-success" th:text="${schedule != null and schedule.availableFirstClassSeats != null ? schedule.availableFirstClassSeats + ' left' : '18 left'}">18 left</span>
+                  <span id="badgeFirstAvail" class="badge badge-success" th:text="${firstClassAvailable != null ? firstClassAvailable + ' left' : (schedule != null and schedule.availableFirstClassSeats != null ? schedule.availableFirstClassSeats + ' left' : '18 left')}">18 left</span>
                 </div>
               </label>
 
               <!-- Second Class Card -->
-              <label class="seat-class-card" style="display: block;">
+              <label class="seat-class-card" style="display: block; cursor: pointer;">
                 <input type="radio" 
                        name="seatClass" 
+                       id="radioClassSecond"
                        value="SECOND" 
                        th:data-price="${schedule != null and schedule.secondClassFare != null ? schedule.secondClassFare : 1000}" 
                        style="margin-right: 6px;">
                 <strong style="color: var(--color-primary); font-size: 1.05rem;">2nd Class Reserved</strong>
                 <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-top: 4px;">
-                  Cushioned Seating, Openable Windows, Overhead Storage
+                  Cushioned Seating, Open Windows, 2+2 Reserved Layout
                 </div>
                 <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center;">
                   <span style="font-weight: 800; color: var(--color-primary);" th:text="${'LKR ' + (schedule != null and schedule.secondClassFare != null ? schedule.secondClassFare : '1,000.00')}">LKR 1,000.00</span>
-                  <span class="badge badge-success" th:text="${schedule != null and schedule.availableSecondClassSeats != null ? schedule.availableSecondClassSeats + ' left' : '42 left'}">42 left</span>
+                  <span id="badgeSecondAvail" class="badge badge-success" th:text="${secondClassAvailable != null ? secondClassAvailable + ' left' : (schedule != null and schedule.availableSecondClassSeats != null ? schedule.availableSecondClassSeats + ' left' : '42 left')}">42 left</span>
                 </div>
               </label>
             </div>
+          </div>
+
+          <!-- Stop-Sales Alert when Selected Class is Sold Out -->
+          <div id="soldOutBanner" class="alert alert-danger" style="display: none; margin-bottom: var(--spacing-md);">
+            <span style="font-size: 1.3rem;">🚫</span>
+            <div>
+              <strong>STOP-SALES: FULL CAPACITY REACHED</strong>
+              <div>No remaining seats available in this class for the selected date. Please choose another class or date.</div>
+            </div>
+          </div>
+
+          <!-- ================= INTERACTIVE VISUAL COACH SEAT MAP WIDGET ================= -->
+          <div style="margin: var(--spacing-lg) 0; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--spacing-md); background: #ffffff;">
+            
+            <!-- Widget Top Header: Title, Real-Time Sync Indicator, Legend -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <strong style="color: var(--color-primary); font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                    <span>💺</span> Interactive Coach Seat Layout
+                  </strong>
+                  <!-- Real-Time Sync Pulse Badge -->
+                  <span id="liveSyncBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; background: #e8f5e9; color: #2e7d32; padding: 3px 10px; border-radius: 12px; font-weight: 700; border: 1px solid #a5d6a7;">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #43a047; display: inline-block;"></span>
+                    Live Sync Active
+                  </span>
+                </div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 2px;">
+                  Select a coach carriage and click seats to choose custom positions. Booked seats update in real time.
+                </div>
+              </div>
+
+              <!-- Seat Status Legend -->
+              <div style="display: flex; gap: 14px; font-size: 0.78rem; align-items: center; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                <span style="display: flex; align-items: center; gap: 5px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #e8f5e9; border: 1.5px solid #81c784; display: inline-block;"></span> Available
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #fff9c4; border: 1.5px solid #fbc02d; display: inline-block;"></span> Selected
+                </span>
+                <span style="display: flex; align-items: center; gap: 5px;">
+                  <span style="width: 14px; height: 14px; border-radius: 3px; background: #ffebee; border: 1.5px solid #ef5350; display: inline-block;"></span> Booked / Locked
+                </span>
+              </div>
+            </div>
+
+            <!-- ================= TRAIN COACH SELECTOR & FORMATION BAR ================= -->
+            <div style="background: #f8fafc; border-radius: 8px; padding: 12px; border: 1px solid #e2e8f0; margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: 0.5px;">
+                  🚆 Train Carriage Formation (Switch Coaches)
+                </span>
+                <span style="font-size: 0.78rem; color: #64748b;" id="coachCountNotice">
+                  Showing all active carriages on this service
+                </span>
+              </div>
+
+              <!-- Coach Buttons Container -->
+              <div id="coachSwitcherContainer" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; align-items: center;">
+                <!-- Dynamically populated coach buttons -->
+              </div>
+            </div>
+
+            <!-- ================= ACTIVE COACH BLUEPRINT CONTAINER ================= -->
+            <div style="background: #f1f5f9; border-radius: 10px; padding: 16px; border: 1.5px solid #cbd5e1; overflow-x: auto;">
+              <!-- Direction and Coach Header -->
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.82rem; font-weight: 700; color: #475569; padding-bottom: 8px; border-bottom: 1px dashed #cbd5e1;">
+                <span style="display: flex; align-items: center; gap: 4px;">
+                  <span>◀</span> Locomotive (Front)
+                </span>
+                <div style="text-align: center;">
+                  <span id="activeCoachHeading" style="font-size: 0.95rem; color: var(--color-primary); font-weight: 800;">
+                    Coach 01 (Car A1) — 1st Class (AC)
+                  </span>
+                  <div id="activeCoachOccupancy" style="font-size: 0.75rem; color: #64748b; font-weight: 600;">
+                    20 seats total • 2+1 Luxury Layout
+                  </div>
+                </div>
+                <span style="display: flex; align-items: center; gap: 4px;">
+                  Rear Compartment <span>▶</span>
+                </span>
+              </div>
+
+              <!-- Coach Layout (2+1 for 1st Class or 2+2 for 2nd Class) -->
+              <div id="coachInteriorContainer" style="min-width: 520px; display: flex; flex-direction: column; gap: 8px; align-items: center; padding: 10px 0;">
+                <!-- Dynamically rendered rows with Aisle Walkway -->
+              </div>
+            </div>
+
+            <!-- Seat Selection Summary & Hidden Inputs -->
+            <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <span>Selected Seats: </span>
+                <strong id="selectedSeatsLabel" style="color: var(--color-primary); font-family: var(--font-mono); font-size: 0.95rem;">
+                  None selected
+                </strong>
+              </div>
+              <span id="seatSelectionNotice" style="color: #64748b; font-size: 0.8rem;">
+                Click any green seat to select or unselect
+              </span>
+            </div>
+
+            <!-- Form Hidden Fields -->
+            <input type="hidden" id="seatNumbersInput" name="seatNumbers" value="" />
+            <input type="hidden" id="coachNumberInput" name="coachNumber" value="Coach 01" />
           </div>
 
           <!-- Seat Count & Primary Passenger -->
@@ -168,6 +305,10 @@
           <!-- Calculation Summary Box -->
           <div style="background-color: var(--color-surface-muted); border: 1px solid var(--color-border-light); border-radius: var(--radius-md); padding: var(--spacing-md); margin-top: var(--spacing-md); margin-bottom: var(--spacing-lg);">
             <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; color: var(--color-text-muted);">
+              <span>Selected Carriage:</span>
+              <span id="activeCoachSummaryDisplay" style="font-weight: 600; color: var(--color-text);">Coach 01 (1st Class AC)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9rem; color: var(--color-text-muted);">
               <span>Fare Per Seat:</span>
               <span id="farePerSeatDisplay" style="font-weight: 600; color: var(--color-text);">LKR 1,800.00</span>
             </div>
@@ -179,13 +320,597 @@
 
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <a th:href="@{/trains/search}" class="btn btn-secondary">← Back to Search</a>
-            <button type="submit" class="btn btn-accent btn-lg">
+            <button id="btnSubmitBooking" type="submit" class="btn btn-accent btn-lg">
               Continue to Payment ➔
             </button>
           </div>
         </form>
       </div>
     </div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    // ================= 10-Minute Temporary Reservation Timer =================
+    let secondsLeft = 600;
+    const timerDisplay = document.getElementById('timerDisplay');
+    if (timerDisplay) {
+      const timerInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          timerDisplay.innerText = "EXPIRED";
+          alert("Your 10-minute temporary seat lock window has expired. The held seats will now be released back to public inventory.");
+          window.location.href = "/trains/search";
+          return;
+        }
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        timerDisplay.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }, 1000);
+    }
+
+    // ================= Data Initialization from Model =================
+    const scheduleId = /*[[${scheduleId}]]*/ 1;
+    const travelDate = /*[[${#strings.toString(date)}]]*/ '2026-08-18';
+    
+    // Server-provided coach structures
+    let coachesData = /*[[${coaches}]]*/ [];
+    // Server-provided booked seat numbers
+    let allBookedSeats = /*[[${allBookedSeats}]]*/ [];
+
+    // Fallback if coaches list was empty
+    if (!coachesData || coachesData.length === 0) {
+      coachesData = [
+        {
+          coachId: 'COACH-01', coachNumber: 'Coach 01', coachLabel: 'Car A1', coachClass: 'FIRST',
+          classDisplayName: '1st Class (AC)', totalSeats: 20, availableSeats: 18, bookedSeats: 2, layoutType: '2+1',
+          seats: []
+        },
+        {
+          coachId: 'COACH-02', coachNumber: 'Coach 02', coachLabel: 'Car A2', coachClass: 'FIRST',
+          classDisplayName: '1st Class (AC)', totalSeats: 20, availableSeats: 20, bookedSeats: 0, layoutType: '2+1',
+          seats: []
+        },
+        {
+          coachId: 'COACH-03', coachNumber: 'Coach 03', coachLabel: 'Car B1', coachClass: 'SECOND',
+          classDisplayName: '2nd Class Reserved', totalSeats: 32, availableSeats: 28, bookedSeats: 4, layoutType: '2+2',
+          seats: []
+        },
+        {
+          coachId: 'COACH-04', coachNumber: 'Coach 04', coachLabel: 'Car B2', coachClass: 'SECOND',
+          classDisplayName: '2nd Class Reserved', totalSeats: 32, availableSeats: 32, bookedSeats: 0, layoutType: '2+2',
+          seats: []
+        }
+      ];
+    }
+
+    // Populate seats if empty in fallback
+    coachesData.forEach(c => {
+      if (!c.seats || c.seats.length === 0) {
+        c.seats = [];
+        const isFirst = (c.coachClass === 'FIRST');
+        const cols = isFirst ? 3 : 4;
+        for (let i = 1; i <= c.totalSeats; i++) {
+          const sNum = 'S' + (i < 10 ? '0' + i : i);
+          const fullId = c.coachNumber + ' / ' + sNum;
+          const colIdx = (i - 1) % cols;
+          let colLetter = 'A';
+          let sType = 'WINDOW';
+          if (isFirst) {
+            colLetter = (colIdx === 0) ? 'A' : (colIdx === 1 ? 'B' : 'C');
+            sType = (colIdx === 0 || colIdx === 2) ? 'WINDOW' : 'AISLE';
+          } else {
+            colLetter = (colIdx === 0) ? 'A' : (colIdx === 1 ? 'B' : (colIdx === 2 ? 'C' : 'D'));
+            sType = (colIdx === 0 || colIdx === 3) ? 'WINDOW' : 'AISLE';
+          }
+          c.seats.push({
+            seatNumber: sNum,
+            fullSeatId: fullId,
+            coachNumber: c.coachNumber,
+            seatClass: c.coachClass,
+            seatType: sType,
+            rowNumber: Math.floor((i - 1) / cols) + 1,
+            columnLetter: colLetter,
+            isBooked: false,
+            bookedStatus: 'AVAILABLE'
+          });
+        }
+      }
+    });
+
+    // Active state
+    let activeCoachIndex = 0;
+    // Track selected seats across coaches as full IDs: e.g. ["Coach 01 / S01", "Coach 01 / S02"]
+    let selectedSeats = [];
+
+    // DOM References
+    const coachSwitcherContainer = document.getElementById('coachSwitcherContainer');
+    const coachInteriorContainer = document.getElementById('coachInteriorContainer');
+    const activeCoachHeading = document.getElementById('activeCoachHeading');
+    const activeCoachOccupancy = document.getElementById('activeCoachOccupancy');
+    const activeCoachSummaryDisplay = document.getElementById('activeCoachSummaryDisplay');
+    const seatCountSelect = document.getElementById('seatCount');
+    const selectedSeatsLabel = document.getElementById('selectedSeatsLabel');
+    const seatNumbersInput = document.getElementById('seatNumbersInput');
+    const coachNumberInput = document.getElementById('coachNumberInput');
+    const farePerSeatDisplay = document.getElementById('farePerSeatDisplay');
+    const totalFareDisplay = document.getElementById('totalFareDisplay');
+    const radioClassFirst = document.getElementById('radioClassFirst');
+    const radioClassSecond = document.getElementById('radioClassSecond');
+    const badgeFirstAvail = document.getElementById('badgeFirstAvail');
+    const badgeSecondAvail = document.getElementById('badgeSecondAvail');
+    const soldOutBanner = document.getElementById('soldOutBanner');
+    const btnSubmitBooking = document.getElementById('btnSubmitBooking');
+    const liveSeatAlert = document.getElementById('liveSeatAlert');
+    const liveSeatAlertMsg = document.getElementById('liveSeatAlertMsg');
+
+    // Seat Normalization helper for accurate booked check
+    function normalizeSeat(s) {
+      if (!s) return '';
+      return s.toLowerCase().replace(/\s+/g, '').replace('coach', 'car').replace(/s0+/g, 's');
+    }
+
+    function isSeatBooked(fullSeatId) {
+      if (!allBookedSeats || allBookedSeats.length === 0) return false;
+      const target = normalizeSeat(fullSeatId);
+      return allBookedSeats.some(b => fullSeatId.toLowerCase() === b.toLowerCase() || target === normalizeSeat(b));
+    }
+
+    // ================= Render Coach Selector Tabs =================
+    function renderCoachTabs() {
+      if (!coachSwitcherContainer) return;
+      coachSwitcherContainer.innerHTML = '';
+
+      // Locomotive Icon Tab
+      const locoTab = document.createElement('div');
+      locoTab.style.padding = '8px 12px';
+      locoTab.style.background = '#e2e8f0';
+      locoTab.style.borderRadius = '6px';
+      locoTab.style.fontSize = '0.8rem';
+      locoTab.style.fontWeight = '700';
+      locoTab.style.color = '#475569';
+      locoTab.style.whiteSpace = 'nowrap';
+      locoTab.style.userSelect = 'none';
+      locoTab.innerHTML = '🚂 Locomotive';
+      coachSwitcherContainer.appendChild(locoTab);
+
+      coachesData.forEach((coach, index) => {
+        const isActive = (index === activeCoachIndex);
+        const isFirst = (coach.coachClass === 'FIRST');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.display = 'flex';
+        btn.style.flexDirection = 'column';
+        btn.style.alignItems = 'flex-start';
+        btn.style.padding = '8px 14px';
+        btn.style.borderRadius = '8px';
+        btn.style.cursor = 'pointer';
+        btn.style.transition = 'all 0.2s ease';
+        btn.style.whiteSpace = 'nowrap';
+        btn.style.border = isActive 
+          ? '2px solid var(--color-primary)' 
+          : '1.5px solid #cbd5e1';
+        btn.style.background = isActive ? '#ffffff' : '#f1f5f9';
+        if (isActive) {
+          btn.style.boxShadow = '0 4px 10px rgba(26, 68, 115, 0.15)';
+        }
+
+        const titleRow = document.createElement('div');
+        titleRow.style.display = 'flex';
+        titleRow.style.alignItems = 'center';
+        titleRow.style.gap = '6px';
+
+        const nameSpan = document.createElement('strong');
+        nameSpan.style.fontSize = '0.88rem';
+        nameSpan.style.color = isActive ? 'var(--color-primary)' : '#1e293b';
+        nameSpan.innerText = coach.coachNumber;
+        titleRow.appendChild(nameSpan);
+
+        const classBadge = document.createElement('span');
+        classBadge.style.fontSize = '0.65rem';
+        classBadge.style.padding = '2px 6px';
+        classBadge.style.borderRadius = '10px';
+        classBadge.style.fontWeight = '700';
+        classBadge.style.textTransform = 'uppercase';
+        if (isFirst) {
+          classBadge.style.background = '#e0f2fe';
+          classBadge.style.color = '#0369a1';
+          classBadge.innerText = '1st Class';
+        } else {
+          classBadge.style.background = '#f0fdf4';
+          classBadge.style.color = '#15803d';
+          classBadge.innerText = '2nd Class';
+        }
+        titleRow.appendChild(classBadge);
+        btn.appendChild(titleRow);
+
+        // Calculate live available seats for this coach
+        let bookedInCoach = 0;
+        coach.seats.forEach(s => {
+          if (isSeatBooked(s.fullSeatId)) bookedInCoach++;
+        });
+        const availInCoach = Math.max(0, coach.totalSeats - bookedInCoach);
+
+        const subInfo = document.createElement('div');
+        subInfo.style.fontSize = '0.72rem';
+        subInfo.style.color = availInCoach > 0 ? '#16a34a' : '#dc2626';
+        subInfo.style.fontWeight = '600';
+        subInfo.style.marginTop = '2px';
+        subInfo.innerText = `${availInCoach} / ${coach.totalSeats} seats avail`;
+        btn.appendChild(subInfo);
+
+        btn.addEventListener('click', () => {
+          switchCoach(index);
+        });
+
+        coachSwitcherContainer.appendChild(btn);
+      });
+    }
+
+    // ================= Switch Active Coach =================
+    function switchCoach(index) {
+      if (index < 0 || index >= coachesData.length) return;
+      activeCoachIndex = index;
+      const coach = coachesData[activeCoachIndex];
+
+      // Update Coach Heading & Metadata
+      if (activeCoachHeading) {
+        activeCoachHeading.innerText = `${coach.coachNumber} (${coach.coachLabel || 'Car'}) — ${coach.classDisplayName}`;
+      }
+      if (activeCoachOccupancy) {
+        const layoutText = (coach.coachClass === 'FIRST') ? '2+1 Luxury Layout' : '2+2 Reserved Layout';
+        activeCoachOccupancy.innerText = `${coach.totalSeats} seats total • ${layoutText}`;
+      }
+      if (activeCoachSummaryDisplay) {
+        activeCoachSummaryDisplay.innerText = `${coach.coachNumber} (${coach.classDisplayName})`;
+      }
+      if (coachNumberInput) {
+        coachNumberInput.value = coach.coachNumber;
+      }
+
+      // Sync travel class radio buttons
+      if (coach.coachClass === 'FIRST' && radioClassFirst && !radioClassFirst.checked) {
+        radioClassFirst.checked = true;
+      } else if (coach.coachClass === 'SECOND' && radioClassSecond && !radioClassSecond.checked) {
+        radioClassSecond.checked = true;
+      }
+
+      // If switching coach, ensure existing selections in this coach or auto-select
+      const count = parseInt(seatCountSelect ? seatCountSelect.value : 1, 10) || 1;
+      const seatsInThisCoach = selectedSeats.filter(s => s.startsWith(coach.coachNumber + ' / '));
+
+      if (seatsInThisCoach.length === 0) {
+        selectedSeats = [];
+        for (let i = 0; i < coach.seats.length && selectedSeats.length < count; i++) {
+          const s = coach.seats[i];
+          if (!isSeatBooked(s.fullSeatId)) {
+            selectedSeats.push(s.fullSeatId);
+          }
+        }
+      }
+
+      renderCoachTabs();
+      renderSeatGrid();
+      updateDisplays();
+    }
+
+    // ================= Render Interactive Seat Blueprint =================
+    function renderSeatGrid() {
+      if (!coachInteriorContainer) return;
+      coachInteriorContainer.innerHTML = '';
+
+      const coach = coachesData[activeCoachIndex];
+      if (!coach) return;
+
+      const isFirst = (coach.coachClass === 'FIRST');
+      const cols = isFirst ? 3 : 4; // 2+1 or 2+2
+      const totalSeats = coach.totalSeats;
+      const rowCount = Math.ceil(totalSeats / cols);
+
+      // Top Entrance Door Visual
+      const doorFront = document.createElement('div');
+      doorFront.style.width = '100%';
+      doorFront.style.maxWidth = isFirst ? '460px' : '540px';
+      doorFront.style.display = 'flex';
+      doorFront.style.justifyContent = 'space-between';
+      doorFront.style.padding = '4px 12px';
+      doorFront.style.background = '#e2e8f0';
+      doorFront.style.borderRadius = '4px';
+      doorFront.style.fontSize = '0.72rem';
+      doorFront.style.fontWeight = '700';
+      doorFront.style.color = '#64748b';
+      doorFront.style.marginBottom = '6px';
+      doorFront.innerHTML = '<span>🚪 Front Entrance</span><span>Luggage Rack 🧳</span>';
+      coachInteriorContainer.appendChild(doorFront);
+
+      // Render Each Row
+      for (let r = 1; r <= rowCount; r++) {
+        const rowWrapper = document.createElement('div');
+        rowWrapper.style.display = 'flex';
+        rowWrapper.style.alignItems = 'center';
+        rowWrapper.style.gap = '10px';
+        rowWrapper.style.width = '100%';
+        rowWrapper.style.maxWidth = isFirst ? '460px' : '540px';
+        rowWrapper.style.justifyContent = 'center';
+
+        // Row Number Label
+        const rowLabel = document.createElement('div');
+        rowLabel.style.width = '24px';
+        rowLabel.style.fontSize = '0.72rem';
+        rowLabel.style.color = '#94a3b8';
+        rowLabel.style.fontWeight = '700';
+        rowLabel.style.textAlign = 'right';
+        rowLabel.innerText = `R${r}`;
+        rowWrapper.appendChild(rowLabel);
+
+        // Left Side Seats
+        const leftGroup = document.createElement('div');
+        leftGroup.style.display = 'flex';
+        leftGroup.style.gap = '8px';
+
+        // Right Side Seats
+        const rightGroup = document.createElement('div');
+        rightGroup.style.display = 'flex';
+        rightGroup.style.gap = '8px';
+
+        // Central Aisle Walkway
+        const aisle = document.createElement('div');
+        aisle.style.width = isFirst ? '42px' : '36px';
+        aisle.style.height = '44px';
+        aisle.style.display = 'flex';
+        aisle.style.alignItems = 'center';
+        aisle.style.justifyContent = 'center';
+        aisle.style.fontSize = '0.62rem';
+        aisle.style.fontWeight = '700';
+        aisle.style.color = '#94a3b8';
+        aisle.style.letterSpacing = '1px';
+        aisle.style.textTransform = 'uppercase';
+        aisle.innerText = 'Aisle';
+
+        // Fill seats for this row
+        for (let c = 0; c < cols; c++) {
+          const seatIndex = (r - 1) * cols + c;
+          if (seatIndex < totalSeats) {
+            const seat = coach.seats[seatIndex];
+            const seatEl = createSeatElement(seat);
+            if (isFirst) {
+              if (c < 2) {
+                leftGroup.appendChild(seatEl); // A, B
+              } else {
+                rightGroup.appendChild(seatEl); // C
+              }
+            } else {
+              if (c < 2) {
+                leftGroup.appendChild(seatEl); // A, B
+              } else {
+                rightGroup.appendChild(seatEl); // C, D
+              }
+            }
+          }
+        }
+
+        rowWrapper.appendChild(leftGroup);
+        rowWrapper.appendChild(aisle);
+        rowWrapper.appendChild(rightGroup);
+        coachInteriorContainer.appendChild(rowWrapper);
+      }
+
+      // Rear Entrance Door Visual
+      const doorRear = document.createElement('div');
+      doorRear.style.width = '100%';
+      doorRear.style.maxWidth = isFirst ? '460px' : '540px';
+      doorRear.style.display = 'flex';
+      doorRear.style.justifyContent = 'space-between';
+      doorRear.style.padding = '4px 12px';
+      doorRear.style.background = '#e2e8f0';
+      doorRear.style.borderRadius = '4px';
+      doorRear.style.fontSize = '0.72rem';
+      doorRear.style.fontWeight = '700';
+      doorRear.style.color = '#64748b';
+      doorRear.style.marginTop = '6px';
+      doorRear.innerHTML = '<span>🚻 Lavatory</span><span>🚪 Rear Exit</span>';
+      coachInteriorContainer.appendChild(doorRear);
+    }
+
+    // ================= Create Interactive Seat Box =================
+    function createSeatElement(seat) {
+      const isBooked = isSeatBooked(seat.fullSeatId);
+      const isSelected = selectedSeats.includes(seat.fullSeatId);
+
+      const seatBox = document.createElement('div');
+      seatBox.style.width = '44px';
+      seatBox.style.height = '44px';
+      seatBox.style.borderRadius = '6px';
+      seatBox.style.display = 'flex';
+      seatBox.style.flexDirection = 'column';
+      seatBox.style.alignItems = 'center';
+      seatBox.style.justifyContent = 'center';
+      seatBox.style.fontSize = '0.75rem';
+      seatBox.style.fontWeight = '700';
+      seatBox.style.cursor = isBooked ? 'not-allowed' : 'pointer';
+      seatBox.style.transition = 'all 0.15s ease';
+      seatBox.style.userSelect = 'none';
+      seatBox.title = `${seat.fullSeatId} (${seat.seatType} - ${seat.columnLetter})`;
+
+      if (isBooked) {
+        seatBox.style.background = '#ffebee';
+        seatBox.style.border = '1.5px solid #ef5350';
+        seatBox.style.color = '#c62828';
+        seatBox.innerHTML = `<span>${seat.seatNumber}</span><span style="font-size:0.6rem;">🔒</span>`;
+      } else if (isSelected) {
+        seatBox.style.background = '#fff9c4';
+        seatBox.style.border = '2px solid #fbc02d';
+        seatBox.style.color = '#f57f17';
+        seatBox.style.boxShadow = '0 2px 8px rgba(251, 192, 45, 0.45)';
+        seatBox.innerHTML = `<span>${seat.seatNumber}</span><span style="font-size:0.6rem;">✓</span>`;
+      } else {
+        seatBox.style.background = '#e8f5e9';
+        seatBox.style.border = '1.5px solid #81c784';
+        seatBox.style.color = '#2e7d32';
+        seatBox.innerHTML = `<span>${seat.seatNumber}</span>`;
+      }
+
+      if (!isBooked) {
+        seatBox.addEventListener('click', () => {
+          handleSeatClick(seat.fullSeatId);
+        });
+      }
+
+      return seatBox;
+    }
+
+    // ================= Seat Click Selection Handler =================
+    function handleSeatClick(fullSeatId) {
+      const idx = selectedSeats.indexOf(fullSeatId);
+      if (idx > -1) {
+        if (selectedSeats.length > 1) {
+          selectedSeats.splice(idx, 1);
+          if (seatCountSelect) seatCountSelect.value = selectedSeats.length;
+        }
+      } else {
+        if (selectedSeats.length >= 6) {
+          alert("Maximum 6 seats may be reserved per passenger transaction.");
+          return;
+        }
+        selectedSeats.push(fullSeatId);
+        if (seatCountSelect) seatCountSelect.value = selectedSeats.length;
+      }
+
+      renderSeatGrid();
+      updateDisplays();
+    }
+
+    // ================= Update Price, Inputs, and Display Labels =================
+    function updateDisplays() {
+      const formatted = selectedSeats.join(', ');
+      if (selectedSeatsLabel) {
+        selectedSeatsLabel.innerText = formatted || 'None selected';
+      }
+      if (seatNumbersInput) {
+        seatNumbersInput.value = formatted || (coachesData[activeCoachIndex].coachNumber + ' / S01');
+      }
+
+      // Price calculation
+      const coach = coachesData[activeCoachIndex];
+      const activeRadio = document.querySelector('input[name="seatClass"]:checked');
+      const unitPrice = activeRadio ? parseFloat(activeRadio.getAttribute('data-price')) || 1800 : 1800;
+      const count = Math.max(1, selectedSeats.length);
+      const total = unitPrice * count;
+
+      if (farePerSeatDisplay) {
+        farePerSeatDisplay.innerText = 'LKR ' + unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      }
+      if (totalFareDisplay) {
+        totalFareDisplay.innerText = 'LKR ' + total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+      }
+    }
+
+    // ================= Passenger Count Dropdown Change =================
+    if (seatCountSelect) {
+      seatCountSelect.addEventListener('change', () => {
+        const count = parseInt(seatCountSelect.value, 10) || 1;
+        const coach = coachesData[activeCoachIndex];
+        selectedSeats = [];
+        for (let i = 0; i < coach.seats.length && selectedSeats.length < count; i++) {
+          const s = coach.seats[i];
+          if (!isSeatBooked(s.fullSeatId)) {
+            selectedSeats.push(s.fullSeatId);
+          }
+        }
+        renderSeatGrid();
+        updateDisplays();
+      });
+    }
+
+    // ================= Travel Class Radio Card Synchronization =================
+    if (radioClassFirst) {
+      radioClassFirst.addEventListener('change', () => {
+        // Switch to the first 1st class coach
+        const firstIdx = coachesData.findIndex(c => c.coachClass === 'FIRST');
+        if (firstIdx !== -1 && firstIdx !== activeCoachIndex) {
+          switchCoach(firstIdx);
+        } else {
+          updateDisplays();
+        }
+      });
+    }
+
+    if (radioClassSecond) {
+      radioClassSecond.addEventListener('change', () => {
+        // Switch to the first 2nd class coach
+        const secondIdx = coachesData.findIndex(c => c.coachClass === 'SECOND');
+        if (secondIdx !== -1 && secondIdx !== activeCoachIndex) {
+          switchCoach(secondIdx);
+        } else {
+          updateDisplays();
+        }
+      });
+    }
+
+    // ================= Real-Time Background REST Polling (Every 3s) =================
+    function pollSeatStatus() {
+      if (!scheduleId || !travelDate) return;
+      fetch(`/api/booking/seats/status?scheduleId=${encodeURIComponent(scheduleId)}&date=${encodeURIComponent(travelDate)}`)
+        .then(response => {
+          if (!response.ok) throw new Error("Status check response error");
+          return response.json();
+        })
+        .then(data => {
+          if (!data) return;
+
+          // Update available badges
+          if (badgeFirstAvail && data.availableFirst !== undefined) {
+            badgeFirstAvail.innerText = `${data.availableFirst} left`;
+          }
+          if (badgeSecondAvail && data.availableSecond !== undefined) {
+            badgeSecondAvail.innerText = `${data.availableSecond} left`;
+          }
+
+          // Check if any newly booked seats affect our current selections
+          if (data.bookedSeats) {
+            allBookedSeats = data.bookedSeats;
+            let conflictRemoved = false;
+
+            selectedSeats = selectedSeats.filter(sel => {
+              if (isSeatBooked(sel)) {
+                conflictRemoved = true;
+                return false;
+              }
+              return true;
+            });
+
+            if (conflictRemoved) {
+              if (liveSeatAlert && liveSeatAlertMsg) {
+                liveSeatAlertMsg.innerText = "Notice: A seat you had selected was just reserved by another passenger. Your selection has been updated.";
+                liveSeatAlert.style.display = "flex";
+                setTimeout(() => {
+                  liveSeatAlert.style.display = "none";
+                }, 8000);
+              }
+              if (seatCountSelect) {
+                seatCountSelect.value = Math.max(1, selectedSeats.length);
+              }
+            }
+
+            renderCoachTabs();
+            renderSeatGrid();
+            updateDisplays();
+          }
+        })
+        .catch(err => {
+          // Graceful silent fail during network hiccups
+          console.debug("Live seat polling idle:", err.message);
+        });
+    }
+
+    // Start background polling every 3 seconds
+    setInterval(pollSeatStatus, 3000);
+
+    // Initial render
+    switchCoach(0);
+    /*]]>*/
+  </script>
   </div>
 </body>
 </html>
