@@ -24,10 +24,10 @@
               👤
             </div>
 
-            <h3 style="margin-bottom: 4px;" th:text="${user != null and user.fullName != null ? user.fullName : 'Kasun Perera'}">
+            <h3 style="margin-bottom: 4px;" th:text="${user != null and user['fullName'] != null ? user['fullName'] : (user != null and user['firstName'] != null ? user['firstName'] : 'Passenger')}">
               Kasun Perera
             </h3>
-            <p style="color: var(--color-text-muted); font-size: 0.88rem; margin-bottom: 12px;" th:text="${user != null and user.email != null ? user.email : 'kasun.perera@example.com'}">
+            <p style="color: var(--color-text-muted); font-size: 0.88rem; margin-bottom: 12px;" th:text="${user != null and user['email'] != null ? user['email'] : 'kasun.perera@example.com'}">
               kasun.perera@example.com
             </p>
 
@@ -35,10 +35,10 @@
 
             <div style="border-top: 1px solid var(--color-border-light); padding-top: 12px; font-size: 0.82rem; color: var(--color-text-muted); text-align: left;">
               <div style="margin-bottom: 6px;">
-                <strong>Member Since:</strong> <span th:text="${user != null and user.memberSince != null ? user.memberSince : 'August 2026'}">August 2026</span>
+                <strong>Member Since:</strong> <span th:text="${user != null and user['memberSince'] != null ? user['memberSince'] : 'August 2026'}">August 2026</span>
               </div>
               <div>
-                <strong>Total Trips Taken:</strong> <span th:text="${user != null and user.totalBookings != null ? user.totalBookings : '6'}">6</span>
+                <strong>Total Trips Taken:</strong> <span th:text="${user != null and user['totalBookings'] != null ? user['totalBookings'] : '0'}">0</span>
               </div>
             </div>
           </div>
@@ -78,7 +78,7 @@
                          id="firstName" 
                          name="firstName" 
                          class="form-control" 
-                         th:value="${user != null and user.firstName != null ? user.firstName : 'Kasun'}" 
+                         th:value="${user != null and user['firstName'] != null ? user['firstName'] : 'Kasun'}" 
                          required>
                 </div>
 
@@ -88,7 +88,7 @@
                          id="lastName" 
                          name="lastName" 
                          class="form-control" 
-                         th:value="${user != null and user.lastName != null ? user.lastName : 'Perera'}" 
+                         th:value="${user != null and user['lastName'] != null ? user['lastName'] : 'Perera'}" 
                          required>
                 </div>
               </div>
@@ -99,7 +99,7 @@
                        id="email" 
                        name="email" 
                        class="form-control" 
-                       th:value="${user != null and user.email != null ? user.email : 'kasun.perera@example.com'}" 
+                       th:value="${user != null and user['email'] != null ? user['email'] : 'kasun.perera@example.com'}" 
                        readonly 
                        style="background-color: var(--color-surface-muted);">
               </div>
@@ -111,7 +111,7 @@
                          id="phone" 
                          name="phone" 
                          class="form-control" 
-                         th:value="${user != null and user.phoneNumber != null ? user.phoneNumber : '0771234567'}" 
+                         th:value="${user != null and user['phoneNumber'] != null ? user['phoneNumber'] : (user != null and user['phone'] != null ? user['phone'] : '0771234567')}" 
                          required>
                 </div>
 
@@ -121,7 +121,44 @@
                          id="nic" 
                          name="nic" 
                          class="form-control" 
-                         th:value="${user != null and user.nic != null ? user.nic : '199623849102'}">
+                         th:value="${user != null and user['nic'] != null ? user['nic'] : '199623849102'}">
+                </div>
+              </div>
+
+              <!-- Notification Preferences -->
+              <div style="border-top: 1px solid var(--color-border); padding-top: var(--spacing-md); margin-top: var(--spacing-md);">
+                <h4 style="font-size: 1rem; color: var(--color-primary); margin-bottom: var(--spacing-sm); display: flex; align-items: center; gap: 8px;">
+                  <span>🔔</span> Multi-Channel Travel Alerts
+                </h4>
+                <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: var(--spacing-md);">
+                  Choose how you wish to receive real-time notifications about train delays, platform changes, and cancellations.
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                    <input type="checkbox" name="notifyByEmail" value="true" th:checked="${user == null or user['notifyByEmail'] == null or user['notifyByEmail']}">
+                    <div>
+                      <strong style="display: block; font-size: 0.9rem;">Email Alerts</strong>
+                      <span style="font-size: 0.8rem; color: var(--color-text-muted);">Receive booking confirmations & E-Tickets</span>
+                    </div>
+                  </label>
+
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f8fafc; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+                    <input type="checkbox" name="notifyBySms" value="true" th:checked="${user == null or user['notifyBySms'] == null or user['notifyBySms']}">
+                    <div>
+                      <strong style="display: block; font-size: 0.9rem;">SMS Alerts</strong>
+                      <span style="font-size: 0.8rem; color: var(--color-text-muted);">Urgent platform change & delay text alerts</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="delayAlertThresholdMinutes">Delay Notification Threshold</label>
+                  <select id="delayAlertThresholdMinutes" name="delayAlertThresholdMinutes" class="form-control">
+                    <option value="5" th:selected="${user != null and user['delayAlertThresholdMinutes'] == 5}">Alert if delayed by 5+ minutes</option>
+                    <option value="15" th:selected="${user == null or user['delayAlertThresholdMinutes'] == null or user['delayAlertThresholdMinutes'] == 15}">Alert if delayed by 15+ minutes (Recommended)</option>
+                    <option value="30" th:selected="${user != null and user['delayAlertThresholdMinutes'] == 30}">Alert if delayed by 30+ minutes</option>
+                    <option value="60" th:selected="${user != null and user['delayAlertThresholdMinutes'] == 60}">Major delays only (60+ minutes)</option>
+                  </select>
                 </div>
               </div>
 
@@ -146,7 +183,7 @@
                   <span style="font-size: 1.2rem;">⭐</span>
                   <div>
                     <strong style="color: var(--color-primary);" th:text="${fav.origin + ' ➔ ' + fav.destination}">Colombo Fort ➔ Kandy</strong>
-                    <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${fav.notes != null ? fav.notes : 'Standard Commute'}">Regular Travel Route</div>
+                    <div style="font-size: 0.78rem; color: var(--color-text-muted);" th:text="${fav.notes != null ? fav.notes : 'Regular Travel Route'}">Regular Travel Route</div>
                   </div>
                 </div>
 

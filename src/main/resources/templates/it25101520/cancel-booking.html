@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" 
+      xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout/base :: layout(~{::div.cancel-page-wrapper})}">
+<head>
+  <title>Cancel Reservation & Refund Estimate | TrainBook</title>
+</head>
+<body>
+  <div class="cancel-page-wrapper container" style="max-width: 760px; margin: 0 auto; padding-top: var(--spacing-lg); padding-bottom: var(--spacing-xxl);">
+    
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: var(--spacing-md); font-size: 0.85rem; color: var(--color-text-muted);">
+      <a th:href="@{/passenger/bookings}" style="color: var(--color-primary); text-decoration: none;">&larr; Back to My Bookings</a>
+    </div>
+
+    <!-- Page Header -->
+    <div style="margin-bottom: var(--spacing-xl);">
+      <h2 style="color: var(--color-danger); display: flex; align-items: center; gap: 8px;">
+        <span>⚠️</span> Request Booking Cancellation
+      </h2>
+      <p style="color: var(--color-text-muted);">
+        Review your trip details and official Sri Lanka Railways refund estimate before confirming cancellation.
+      </p>
+    </div>
+
+    <!-- ================= TRIP SUMMARY CARD ================= -->
+    <div class="card" style="margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Reservation Summary</h3>
+        <span style="font-family: var(--font-mono); font-weight: 700; color: var(--color-primary); font-size: 1.05rem;" 
+              th:text="${summary.ticketNumber}">TKT-2026-10100</span>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-md); font-size: 0.95rem;">
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Train Service:</span>
+            <div style="font-weight: 700; color: var(--color-primary);" th:text="${summary.trainName}">Udarata Menike</div>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Route:</span>
+            <div style="font-weight: 600;" th:text="${summary.origin + ' ➔ ' + summary.destination}">Colombo Fort ➔ Kandy</div>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Travel Date & Time:</span>
+            <div style="font-weight: 600;" th:text="${summary.travelDate + ' at ' + summary.departureTime}">2026-09-28 at 05:55 AM</div>
+          </div>
+          <div>
+            <span style="color: var(--color-text-muted); font-size: 0.8rem; text-transform: uppercase;">Reserved Seats:</span>
+            <div style="font-weight: 600;" th:text="${summary.seatClass + ' • ' + summary.seatNumbers + ' (' + summary.numberOfSeats + ' seats)'}">FIRST • Car 01 / S12 (1 seats)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= REFUND BREAKDOWN CARD ================= -->
+    <div class="card" style="border: 2px solid var(--color-border); margin-bottom: var(--spacing-xl);">
+      <div class="card-header" style="background: var(--color-surface-muted);">
+        <h3 class="card-title">Official Refund Calculation</h3>
+        <span class="badge badge-info" th:text="${summary.refundPercentage + '% Refundable'}">90% Refundable</span>
+      </div>
+      <div class="card-body">
+        <div style="background: #f8fafc; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: var(--spacing-lg); border: 1px solid var(--color-border-light);">
+          <strong style="color: var(--color-primary); font-size: 0.9rem; display: block; margin-bottom: 2px;">Cancellation Policy Applied:</strong>
+          <span style="font-size: 0.85rem; color: var(--color-text-muted);" th:text="${summary.policyTierDescription}">
+            Tier 1 (>48h before departure): 90% Refund (10% Service Fee)
+          </span>
+        </div>
+
+        <table class="table" style="margin-bottom: 0;">
+          <tbody>
+            <tr>
+              <td style="color: var(--color-text-muted);">Original Fare Paid:</td>
+              <td style="text-align: right; font-weight: 600;" th:text="${'LKR ' + #numbers.formatDecimal(summary.originalAmount, 1, 'COMMA', 2, 'POINT')}">LKR 1,800.00</td>
+            </tr>
+            <tr>
+              <td style="color: var(--color-text-muted);">Cancellation / Administrative Deductions:</td>
+              <td style="text-align: right; color: var(--color-danger); font-weight: 600;" th:text="${'- LKR ' + #numbers.formatDecimal(summary.cancellationFee, 1, 'COMMA', 2, 'POINT')}">- LKR 180.00</td>
+            </tr>
+            <tr style="border-top: 2px solid var(--color-border); font-size: 1.1rem;">
+              <td><strong>Net Refund to Original Card:</strong></td>
+              <td style="text-align: right; color: var(--color-success-dark); font-weight: 700; font-size: 1.25rem;" 
+                  th:text="${'LKR ' + #numbers.formatDecimal(summary.refundAmount, 1, 'COMMA', 2, 'POINT')}">
+                LKR 1,620.00
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================= CONFIRMATION FORM ================= -->
+    <div class="card" style="border-top: 4px solid var(--color-danger);">
+      <div class="card-body">
+        <form th:action="@{/passenger/bookings/{id}/cancel(id=${summary.bookingId})}" method="post">
+          <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+          <div class="form-group" style="margin-bottom: var(--spacing-lg);">
+            <label class="form-label" for="reason">Reason for Cancellation (Optional)</label>
+            <select id="reason" name="reason" class="form-control">
+              <option value="Change of travel plans">Change of travel plans</option>
+              <option value="Schedule conflict or timing change">Schedule conflict or timing change</option>
+              <option value="Illness or personal emergency">Illness or personal emergency</option>
+              <option value="Train service delay or adjustment">Train service delay or adjustment</option>
+              <option value="Booked incorrect class or route">Booked incorrect class or route</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: var(--spacing-lg);">
+            ℹ️ <strong>Please Note:</strong> By confirming cancellation, your allocated seats will be immediately released back to the general inventory and your digital QR boarding pass will be invalidated. The refund amount will be credited to your card in 3–5 business days.
+          </p>
+
+          <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+            <a th:href="@{/passenger/bookings}" class="btn btn-secondary">
+              Keep My Booking
+            </a>
+            <button type="submit" class="btn btn-danger" style="padding: 10px 20px;">
+              <span>✖</span> Confirm Cancellation & Process Refund
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

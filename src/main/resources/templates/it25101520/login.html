@@ -18,7 +18,7 @@
     </div>
 
     <!-- Error Alert -->
-    <div class="alert alert-danger" th:if="${param.error}">
+    <div class="alert alert-danger" th:if="${param.error != null}">
       <span>⚠️</span>
       <div>
         <strong th:if="${SPRING_SECURITY_LAST_EXCEPTION != null}" th:text="${SPRING_SECURITY_LAST_EXCEPTION.message}">Invalid credentials</strong>
@@ -27,15 +27,21 @@
     </div>
 
     <!-- Logout Alert -->
-    <div class="alert alert-info" th:if="${param.logout}">
+    <div class="alert alert-info" th:if="${param.logout != null}">
       <span>✓</span>
       <span>You have been successfully signed out.</span>
     </div>
 
-    <!-- Success message (e.g. after registration or password reset) -->
-    <div class="alert alert-success" th:if="${successMessage != null}">
+    <!-- Reset Success Alert -->
+    <div class="alert alert-success" th:if="${param.resetSuccess != null}">
       <span>✓</span>
-      <span th:text="${successMessage}">Registration successful! You may now sign in.</span>
+      <span>Password has been reset successfully! You may now sign in with your new password.</span>
+    </div>
+
+    <!-- Success message (e.g. after registration) -->
+    <div class="alert alert-success" th:if="${successMessage != null or param.registered != null}">
+      <span>✓</span>
+      <span th:text="${successMessage != null ? successMessage : 'Registration successful! You may now sign in.'}">Registration successful! You may now sign in.</span>
     </div>
 
     <!-- Login Form -->
