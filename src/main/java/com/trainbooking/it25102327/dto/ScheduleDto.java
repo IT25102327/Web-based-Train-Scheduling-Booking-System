@@ -33,8 +33,19 @@ public class ScheduleDto {
     private BigDecimal secondClassFare;
     private Boolean isActive;
     private String defaultPlatform;
+    private String assignedPlatform;
     private Boolean isSeasonal;
     private String seasonalName;
     private Boolean isMaintenanceBlocked;
     private String maintenanceNotes;
+
+    public String getEffectivePlatform() {
+        if (assignedPlatform != null && !assignedPlatform.isBlank()) {
+            return assignedPlatform;
+        }
+        if (defaultPlatform != null && !defaultPlatform.isBlank()) {
+            return defaultPlatform;
+        }
+        return "Platform 1";
+    }
 }

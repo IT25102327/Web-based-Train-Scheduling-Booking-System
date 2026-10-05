@@ -33,13 +33,20 @@
   - `it25102327/schedules.html` (Page 2): Master timetables, departure/arrival schedules, platform assignments, seasonal overrides, maintenance blocks, edit form, and safe delete.
   - `it25102327/routes.html` (Page 3): Railway route corridor management, add/delete route corridors, platform allocations, and interactive real-time dynamic pricing simulator widget.
   - `it25102327/search.html`: Public train search, date picker, station autocomplete, and live availability results display.
+- [x] **OpenStreetMap Route & Intermediate Station Visualizer (`/trains/routes`)**:
+  - Embedded Leaflet/OpenStreetMap engine visualizing Sri Lankan railway corridors with polylines and station markers.
+  - Interactive route corridor selector and custom station-pair trace tool.
+  - Intermediate stations sequence timeline breakdown showing stop sequence numbers, cumulative distance (km), and platform counts.
+  - Interactive marker zoom and detailed station popup dialogs (code, distance, platforms, line name).
+- [x] **Platform Collision Validation & Autonomous Platform Assignment System (`/trains/schedules`)**:
+  - Implemented 20-minute safety buffer headway validation across both arrival and departure station movements.
+  - Autonomous platform allocation engine that evaluates station platform occupancy across Platforms 1 through 6 on the target day of week, auto-assigning the first conflict-free platform.
+  - Real-time collision warning alert box and 1-click "Apply Recommended Platform" in timetable creation and edit forms.
+  - Dedicated REST endpoints: `/api/schedules/platform/check`, `/api/schedules/platform/auto-assign`, `/api/routes/{id}/stations`, `/api/routes/corridor`, and `/api/routes/stations`.
 - [x] **Unit Testing (JUnit 5 + Mockito)**:
   - `TrainServiceTest.java`: Verified train listing, lookup by ID, creation, status update, cascade deletion, and schedule search mapping.
-  - `ScheduleServiceTest.java`: Verified schedule listing, lookup by ID, creation, update, cascade deletion, platform conflict detection, dynamic pricing calculation, seasonal timetable overrides, and maintenance block conflict alerts.
-- [x] **Bug Fixes & Refactoring**:
-  - **Edit Bug Resolved**: Moved `<script>` tags inside the Thymeleaf layout fragment wrappers (`fleet-wrapper`, `schedules-wrapper`, `manage-trains-wrapper`), fixing `populateEditTrain()` and `populateEditSchedule()` not being included in the rendered HTML.
-  - **Delete Bug Resolved**: Implemented hierarchical cascade deletion: `BoardingLog` ➔ `Ticket` ➔ `Payment` ➔ `Booking` ➔ `Schedule` ➔ `Train`. Deleting seeded or newly created trains/schedules now succeeds without MySQL foreign key constraint violations.
-  - **UI Ergonomics**: Replaced monolithic manage page with 3 dedicated pages linked by a sticky sub-navigation tab bar and sidebar links.
+  - `ScheduleServiceTest.java`: Verified schedule listing, lookup by ID, creation, update, cascade deletion, platform conflict detection, autonomous platform assignment, dynamic pricing calculation, seasonal timetable overrides, and maintenance block conflict alerts.
+  - `RailwayStationServiceTest.java`: Verified station sequence extraction along Main Line, Coastal Line, Northern Line, reverse trip geometry, and polyline coordinates.
 
 ---
 
@@ -49,6 +56,8 @@
 ---
 
 ## 📋 TODO (Upcoming Enhancements)
+- [x] OpenStreetMap route & intermediate station visualizer.
+- [x] Platform collision validation & autonomous platform allocator.
 - [x] Coordinator dashboard metrics synchronization with UC-06.
 - [x] Real-time fleet live status endpoint `/api/trains/live-status` feeding departure boards.
 - [x] Operational status update propagation to UC-05 passenger notification engine.

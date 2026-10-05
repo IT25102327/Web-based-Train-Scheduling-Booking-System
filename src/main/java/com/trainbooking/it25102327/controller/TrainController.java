@@ -1,9 +1,13 @@
 package com.trainbooking.it25102327.controller;
 
+import com.trainbooking.it25102327.dto.RouteDetailDto;
 import com.trainbooking.it25102327.dto.ScheduleDto;
+import com.trainbooking.it25102327.dto.StationDto;
 import com.trainbooking.it25102327.dto.TrainDto;
 import com.trainbooking.it25102327.dto.TrainSearchResultDto;
+import com.trainbooking.it25102327.model.Route;
 import com.trainbooking.it25102327.model.Schedule;
+import com.trainbooking.it25102327.service.RailwayStationService;
 import com.trainbooking.it25102327.service.ScheduleService;
 import com.trainbooking.it25102327.service.TrainService;
 import com.trainbooking.it25102925.service.NotificationService;
@@ -24,7 +28,7 @@ import java.util.Map;
 /**
  * Controller handling train search views, fleet management, and live schedule operations.
  *
- * @author SLIIT Software Engineering Team
+ * @author SLIIT Software Engineering Team (IT25102327)
  * @version 1.0.0
  */
 @Slf4j
@@ -35,6 +39,7 @@ public class TrainController {
     private final TrainService trainService;
     private final ScheduleService scheduleService;
     private final NotificationService notificationService;
+    private final RailwayStationService railwayStationService;
 
     /**
      * Handles train search queries and displays matching available trains.
@@ -90,15 +95,89 @@ public class TrainController {
     public String routesDashboard(Model model) {
         log.debug("Accessing railway routes and pricing dashboard");
         model.addAttribute("routes", scheduleService.getAllRoutes());
+        model.addAttribute("allStations", railwayStationService.getAllStations());
         return "it25102327/routes";
     }
 
     /**
-     * Creates a new railway route.
+     * REST endpoint returning intermediate stations, geo-coordinates, and distance for a specific route.
+     *
+     * @param id route ID
+     * @return RouteDetailDto with stations and map polyline coordinates
+     */
+    @GetMapping("/api/routes/{id}/stations")
+    @ResponseBody
+    public RouteDetailDto getRouteStations(@PathVariable("id") Long id) {
+        log.debug("Fetching route station details for ID: {}", id);
+        Route route = scheduleService.getRouteById(id);
+        return railwayStationService.getRouteDetails(route);
+    }
+
+    /**
+     * REST endpoint returning corridor geometry and stations between any origin and destination.
+     *
+     * @param origin departure station
+     * @param destination arrival station
+     * @return RouteDetailDto
+     */
+    @GetMapping("/api/routes/corridor")
+    @ResponseBody
+    public RouteDetailDto getCorridorStations(
+            @RequestParam("origin") String origin,
+            @RequestParam("destination") String destination
+    ) {
+        log.debug("Resolving corridor stations: {} ➔ {}", origin, destination);
+        Route mockRoute = Route.builder()
+                .origin(origin)
+                .destination(destination)
+                .defaultPlatform("Platform 1")
+                .build();
+        return railwayStationService.getRouteDetails(mockRoute);
+    }
+
+    /**
+     * REST endpoint returning all registered railway network stations.
+     *
+     * @return list of StationDto
+     */
+    @GetMapping("/api/routes/stations")
+    @ResponseBody
+    public List<StationDto> getAllNetworkStations() {
+        return railwayStationService.getAllStations();
+    }
+
+    /**
+     * REST endpoint autonomously calculating railway track distance between any two stations.
      *
      * @param origin origin station
      * @param destination destination station
-     * @param distanceKm travel distance in km
+     * @return Map with calculated distance in km and metadata
+     */
+    @GetMapping("/api/routes/calculate-distance")
+    @ResponseBody
+    public Map<String, Object> calculateRouteDistance(
+            @RequestParam("origin") String origin,
+            @RequestParam("destination") String destination
+    ) {
+        log.debug("Calculating track distance: {} ➔ {}", origin, destination);
+        int distanceKm = railwayStationService.calculateTrackDistanceKm(origin, destination);
+        List<StationDto> stations = railwayStationService.getStationsAlongRoute(origin, destination);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("origin", origin);
+        result.put("destination", destination);
+        result.put("distanceKm", distanceKm);
+        result.put("stationsCount", stations.size());
+        result.put("status", "SUCCESS");
+        return result;
+    }
+
+    /**
+     * Creates a new railway route with automatic track distance computation if omitted.
+     *
+     * @param origin origin station
+     * @param destination destination station
+     * @param distanceKm travel distance in km (auto-computed if null or 0)
      * @param defaultPlatform default platform designation
      * @param redirectAttributes flash attributes
      * @return redirect to routes dashboard
@@ -107,13 +186,17 @@ public class TrainController {
     public String createRoute(
             @RequestParam("origin") String origin,
             @RequestParam("destination") String destination,
-            @RequestParam(value = "distanceKm", defaultValue = "100") Integer distanceKm,
+            @RequestParam(value = "distanceKm", required = false) Integer distanceKm,
             @RequestParam(value = "defaultPlatform", defaultValue = "Platform 1") String defaultPlatform,
             RedirectAttributes redirectAttributes
     ) {
+        if (distanceKm == null || distanceKm <= 0) {
+            distanceKm = railwayStationService.calculateTrackDistanceKm(origin, destination);
+        }
         log.info("Creating new route: {} ➔ {} ({} km, {})", origin, destination, distanceKm, defaultPlatform);
         scheduleService.createRoute(origin, destination, distanceKm, defaultPlatform);
-        redirectAttributes.addFlashAttribute("successMessage", "Route '" + origin + " ➔ " + destination + "' added successfully.");
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Route '" + origin + " ➔ " + destination + "' (" + distanceKm + " km) added successfully.");
         return "redirect:/trains/routes";
     }
 

@@ -1,6 +1,7 @@
 package com.trainbooking.it25102327.service;
 
 import com.trainbooking.exception.ResourceNotFoundException;
+import com.trainbooking.it25102327.dto.PlatformAssignmentResult;
 import com.trainbooking.it25102327.dto.ScheduleDto;
 import com.trainbooking.it25102327.model.Route;
 import com.trainbooking.it25102327.model.Schedule;
@@ -15,8 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service class responsible for managing train schedules, timetable lookups,
@@ -62,18 +67,24 @@ public class ScheduleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found with ID: " + id));
     }
 
+    public static final List<String> STANDARD_PLATFORMS = List.of(
+            "Platform 1", "Platform 2", "Platform 3", "Platform 4", "Platform 5", "Platform 6"
+    );
+
     /**
      * Validates whether a schedule creates a platform conflict with an existing schedule.
      * A conflict occurs when two distinct schedules depart or arrive at the same station
-     * on the same platform within 20 minutes of each other.
+     * on the same platform within 20 minutes of each other on the same day of the week.
      *
      * @param schedule the schedule to check
      * @return conflict description if conflict found, or null if platform is clear
      */
     public String validatePlatformConflict(Schedule schedule) {
         if (schedule == null || schedule.getRoute() == null) return null;
-        String platform = schedule.getRoute().getDefaultPlatform();
-        if (platform == null || platform.isBlank()) return null;
+        String platform = schedule.getAssignedPlatform() != null && !schedule.getAssignedPlatform().isBlank()
+                ? schedule.getAssignedPlatform().trim()
+                : (schedule.getRoute().getDefaultPlatform() != null && !schedule.getRoute().getDefaultPlatform().isBlank()
+                ? schedule.getRoute().getDefaultPlatform().trim() : "Platform 1");
 
         List<Schedule> existing = scheduleRepository.findAll();
         for (Schedule s : existing) {
@@ -81,18 +92,172 @@ public class ScheduleService {
             if (!Boolean.TRUE.equals(s.getIsActive())) continue;
             if (s.getDayOfWeek() != schedule.getDayOfWeek()) continue;
 
-            if (s.getRoute() != null && s.getRoute().getOrigin().equalsIgnoreCase(schedule.getRoute().getOrigin())) {
-                if (platform.equalsIgnoreCase(s.getRoute().getDefaultPlatform())) {
-                    long diffMinutes = Math.abs(java.time.Duration.between(s.getDepartureTime(), schedule.getDepartureTime()).toMinutes());
-                    if (diffMinutes < 20) {
-                        return "Platform Conflict: Train " + (s.getTrain() != null ? s.getTrain().getTrainName() : "#" + s.getId())
-                                + " is already assigned to " + platform + " at " + s.getDepartureTime()
-                                + " (within " + diffMinutes + " mins).";
-                    }
+            String sPlatform = s.getAssignedPlatform() != null && !s.getAssignedPlatform().isBlank()
+                    ? s.getAssignedPlatform().trim()
+                    : (s.getRoute() != null && s.getRoute().getDefaultPlatform() != null ? s.getRoute().getDefaultPlatform().trim() : "Platform 1");
+
+            if (!platform.equalsIgnoreCase(sPlatform)) continue;
+
+            // 1. Check Origin Station Departure collision
+            if (s.getRoute() != null && s.getRoute().getOrigin() != null && schedule.getRoute().getOrigin() != null &&
+                    s.getRoute().getOrigin().equalsIgnoreCase(schedule.getRoute().getOrigin()) &&
+                    s.getDepartureTime() != null && schedule.getDepartureTime() != null) {
+                long diffMinutes = Math.abs(Duration.between(s.getDepartureTime(), schedule.getDepartureTime()).toMinutes());
+                if (diffMinutes < 20) {
+                    return "Platform Conflict at " + schedule.getRoute().getOrigin() + ": Train " +
+                            (s.getTrain() != null ? s.getTrain().getTrainName() : "#" + s.getId()) +
+                            " is already assigned to " + platform + " at " + s.getDepartureTime() +
+                            " (within " + diffMinutes + " mins).";
+                }
+            }
+
+            // 2. Check Destination Station Arrival collision
+            if (s.getRoute() != null && s.getRoute().getDestination() != null && schedule.getRoute().getDestination() != null &&
+                    s.getRoute().getDestination().equalsIgnoreCase(schedule.getRoute().getDestination()) &&
+                    s.getArrivalTime() != null && schedule.getArrivalTime() != null) {
+                long diffMinutes = Math.abs(Duration.between(s.getArrivalTime(), schedule.getArrivalTime()).toMinutes());
+                if (diffMinutes < 20) {
+                    return "Platform Conflict at " + schedule.getRoute().getDestination() + ": Train " +
+                            (s.getTrain() != null ? s.getTrain().getTrainName() : "#" + s.getId()) +
+                            " is already assigned to " + platform + " at " + s.getArrivalTime() +
+                            " (within " + diffMinutes + " mins).";
                 }
             }
         }
         return null;
+    }
+
+    /**
+     * Autonomously assigns the first available, conflict-free platform for a train schedule.
+     * Prevents train collisions by evaluating headway time separations against all active schedules.
+     *
+     * @param stationName station to allocate platform at (e.g. Colombo Fort)
+     * @param dayOfWeek operating day of week
+     * @param departureTime scheduled departure time
+     * @param excludeScheduleId ID of current schedule being updated, or null for new schedules
+     * @return conflict-free platform designation (e.g. "Platform 2")
+     */
+    public String assignAutonomousPlatform(String stationName, DayOfWeek dayOfWeek, LocalTime departureTime, Long excludeScheduleId) {
+        log.info("Running autonomous platform assignment for station='{}', day={}, time={}", stationName, dayOfWeek, departureTime);
+        if (stationName == null || dayOfWeek == null || departureTime == null) {
+            return "Platform 1";
+        }
+
+        List<Schedule> activeSchedules = scheduleRepository.findAll().stream()
+                .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
+                .filter(s -> s.getDayOfWeek() == dayOfWeek)
+                .filter(s -> excludeScheduleId == null || !s.getId().equals(excludeScheduleId))
+                .filter(s -> s.getRoute() != null && s.getRoute().getOrigin() != null && s.getRoute().getOrigin().equalsIgnoreCase(stationName.trim()))
+                .toList();
+
+        for (String platform : STANDARD_PLATFORMS) {
+            boolean hasConflict = false;
+            for (Schedule s : activeSchedules) {
+                String assigned = s.getAssignedPlatform() != null && !s.getAssignedPlatform().isBlank()
+                        ? s.getAssignedPlatform().trim()
+                        : (s.getRoute().getDefaultPlatform() != null ? s.getRoute().getDefaultPlatform().trim() : "Platform 1");
+                if (platform.equalsIgnoreCase(assigned)) {
+                    long diffMinutes = Math.abs(Duration.between(s.getDepartureTime(), departureTime).toMinutes());
+                    if (diffMinutes < 20) {
+                        hasConflict = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasConflict) {
+                log.info("Autonomous platform allocator successfully assigned: {}", platform);
+                return platform;
+            }
+        }
+
+        // Fallback: Pick the platform with the maximum headway margin
+        String bestPlatform = "Platform 1";
+        long maxHeadway = -1;
+        for (String platform : STANDARD_PLATFORMS) {
+            long minHeadwayForPlatform = Long.MAX_VALUE;
+            for (Schedule s : activeSchedules) {
+                String assigned = s.getAssignedPlatform() != null && !s.getAssignedPlatform().isBlank()
+                        ? s.getAssignedPlatform().trim()
+                        : (s.getRoute().getDefaultPlatform() != null ? s.getRoute().getDefaultPlatform().trim() : "Platform 1");
+                if (platform.equalsIgnoreCase(assigned)) {
+                    long diff = Math.abs(Duration.between(s.getDepartureTime(), departureTime).toMinutes());
+                    if (diff < minHeadwayForPlatform) {
+                        minHeadwayForPlatform = diff;
+                    }
+                }
+            }
+            if (minHeadwayForPlatform > maxHeadway) {
+                maxHeadway = minHeadwayForPlatform;
+                bestPlatform = platform;
+            }
+        }
+        return bestPlatform;
+    }
+
+    /**
+     * Checks platform availability and returns detailed collision analysis and recommendations.
+     *
+     * @param stationName station name
+     * @param dayOfWeek day of week
+     * @param departureTime scheduled departure time
+     * @param requestedPlatform candidate platform
+     * @param excludeScheduleId schedule ID to exclude
+     * @return {@link PlatformAssignmentResult}
+     */
+    public PlatformAssignmentResult checkPlatformAvailability(String stationName, DayOfWeek dayOfWeek, LocalTime departureTime, String requestedPlatform, Long excludeScheduleId) {
+        String reqPlatform = (requestedPlatform != null && !requestedPlatform.isBlank()) ? requestedPlatform.trim() : "Platform 1";
+        List<Schedule> activeSchedules = scheduleRepository.findAll().stream()
+                .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
+                .filter(s -> s.getDayOfWeek() == dayOfWeek)
+                .filter(s -> excludeScheduleId == null || !s.getId().equals(excludeScheduleId))
+                .filter(s -> s.getRoute() != null && s.getRoute().getOrigin() != null && s.getRoute().getOrigin().equalsIgnoreCase(stationName != null ? stationName.trim() : ""))
+                .toList();
+
+        Map<String, String> occupancyMap = new LinkedHashMap<>();
+        List<String> available = new ArrayList<>();
+        String conflictDesc = null;
+        boolean isConflict = false;
+
+        for (String p : STANDARD_PLATFORMS) {
+            Schedule conflicting = null;
+            long minDiff = Long.MAX_VALUE;
+            for (Schedule s : activeSchedules) {
+                String assigned = s.getAssignedPlatform() != null && !s.getAssignedPlatform().isBlank()
+                        ? s.getAssignedPlatform().trim()
+                        : (s.getRoute().getDefaultPlatform() != null ? s.getRoute().getDefaultPlatform().trim() : "Platform 1");
+                if (p.equalsIgnoreCase(assigned)) {
+                    long diff = Math.abs(Duration.between(s.getDepartureTime(), departureTime).toMinutes());
+                    if (diff < 20) {
+                        conflicting = s;
+                        minDiff = diff;
+                        break;
+                    }
+                }
+            }
+            if (conflicting != null) {
+                String trainLabel = conflicting.getTrain() != null ? conflicting.getTrain().getTrainName() : "Train #" + conflicting.getId();
+                occupancyMap.put(p, trainLabel + " at " + conflicting.getDepartureTime() + " (" + minDiff + "m gap)");
+                if (p.equalsIgnoreCase(reqPlatform)) {
+                    isConflict = true;
+                    conflictDesc = "Collision Risk: " + p + " is occupied by " + trainLabel + " at " + conflicting.getDepartureTime() + " (headway: " + minDiff + " mins < 20 min threshold).";
+                }
+            } else {
+                available.add(p);
+                occupancyMap.put(p, "CLEAR");
+            }
+        }
+
+        String autoPlatform = isConflict ? assignAutonomousPlatform(stationName, dayOfWeek, departureTime, excludeScheduleId) : reqPlatform;
+
+        return PlatformAssignmentResult.builder()
+                .stationName(stationName)
+                .requestedPlatform(reqPlatform)
+                .allocatedPlatform(autoPlatform)
+                .isConflict(isConflict)
+                .conflictDescription(conflictDesc)
+                .availablePlatforms(available)
+                .platformOccupancyMap(occupancyMap)
+                .build();
     }
 
     /**
@@ -201,12 +366,20 @@ public class ScheduleService {
         LocalTime arrTime = LocalTime.parse(scheduleDto.getArrivalTime());
         DayOfWeek dayOfWeek = DayOfWeek.valueOf(scheduleDto.getDayOfWeek().toUpperCase());
 
+        String assignedPlat = scheduleDto.getAssignedPlatform();
+        if (assignedPlat == null || assignedPlat.isBlank() || "AUTO".equalsIgnoreCase(assignedPlat) || "AUTONOMOUS".equalsIgnoreCase(assignedPlat)) {
+            assignedPlat = assignAutonomousPlatform(route.getOrigin(), dayOfWeek, depTime, null);
+        } else {
+            assignedPlat = assignedPlat.trim();
+        }
+
         Schedule schedule = Schedule.builder()
                 .train(train)
                 .route(route)
                 .departureTime(depTime)
                 .arrivalTime(arrTime)
                 .dayOfWeek(dayOfWeek)
+                .assignedPlatform(assignedPlat)
                 .firstClassFare(scheduleDto.getFirstClassFare() != null ? scheduleDto.getFirstClassFare() :
                         calculateDynamicFare(route.getDistanceKm(), "FIRST", depTime, dayOfWeek))
                 .secondClassFare(scheduleDto.getSecondClassFare() != null ? scheduleDto.getSecondClassFare() :
@@ -370,12 +543,28 @@ public class ScheduleService {
         if (dto.getMaintenanceNotes() != null) {
             schedule.setMaintenanceNotes(dto.getMaintenanceNotes());
         }
+        if (dto.getAssignedPlatform() != null) {
+            if ("AUTO".equalsIgnoreCase(dto.getAssignedPlatform()) || "AUTONOMOUS".equalsIgnoreCase(dto.getAssignedPlatform())) {
+                schedule.setAssignedPlatform(assignAutonomousPlatform(
+                        schedule.getRoute() != null ? schedule.getRoute().getOrigin() : "Colombo Fort",
+                        schedule.getDayOfWeek(),
+                        schedule.getDepartureTime(),
+                        schedule.getId()));
+            } else if (!dto.getAssignedPlatform().isBlank()) {
+                schedule.setAssignedPlatform(dto.getAssignedPlatform().trim());
+            }
+        }
 
         Schedule saved = scheduleRepository.save(schedule);
         return mapToDto(saved);
     }
 
     private ScheduleDto mapToDto(Schedule s) {
+        String effectivePlatform = (s.getAssignedPlatform() != null && !s.getAssignedPlatform().isBlank())
+                ? s.getAssignedPlatform().trim()
+                : (s.getRoute() != null && s.getRoute().getDefaultPlatform() != null && !s.getRoute().getDefaultPlatform().isBlank()
+                ? s.getRoute().getDefaultPlatform().trim() : "Platform 1");
+
         return ScheduleDto.builder()
                 .id(s.getId())
                 .trainId(s.getTrain() != null ? s.getTrain().getId() : null)
@@ -390,7 +579,8 @@ public class ScheduleService {
                 .firstClassFare(s.getFirstClassFare())
                 .secondClassFare(s.getSecondClassFare())
                 .isActive(s.getIsActive())
-                .defaultPlatform(s.getRoute() != null ? s.getRoute().getDefaultPlatform() : "Platform 1")
+                .defaultPlatform(effectivePlatform)
+                .assignedPlatform(s.getAssignedPlatform() != null ? s.getAssignedPlatform() : effectivePlatform)
                 .isSeasonal(s.getIsSeasonal())
                 .seasonalName(s.getSeasonalName())
                 .isMaintenanceBlocked(s.getIsMaintenanceBlocked())

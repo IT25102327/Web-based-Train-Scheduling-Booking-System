@@ -78,4 +78,7 @@ public class Schedule {
 
     @Column(name = "maintenance_notes")
     private String maintenanceNotes;
+
+    @Column(name = "assigned_platform")
+    private String assignedPlatform;
 }

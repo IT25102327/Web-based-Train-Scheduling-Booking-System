@@ -1,5 +1,6 @@
 package com.trainbooking.it25102327.controller;
 
+import com.trainbooking.it25102327.dto.PlatformAssignmentResult;
 import com.trainbooking.it25102327.dto.ScheduleDto;
 import com.trainbooking.it25102327.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,10 @@ import org.springframework.web.bind.annotation.*;
 import com.trainbooking.it25102327.service.TrainService;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Controller handling train schedule management endpoints for administrators.
@@ -42,9 +46,57 @@ public class ScheduleController {
         model.addAttribute("schedules", schedules);
         model.addAttribute("trains", trainService.getAllTrains());
         model.addAttribute("routes", scheduleService.getAllRoutes());
+        model.addAttribute("platforms", ScheduleService.STANDARD_PLATFORMS);
         model.addAttribute("newSchedule", new ScheduleDto());
         model.addAttribute("scheduleDto", new ScheduleDto());
         return "it25102327/schedules";
+    }
+
+    /**
+     * REST endpoint checking platform collision risks and availability for given station, day, and time.
+     *
+     * @param station departure station
+     * @param day day of week
+     * @param departureTime scheduled departure time (HH:mm)
+     * @param platform candidate platform
+     * @param excludeId optional schedule ID to exclude
+     * @return {@link PlatformAssignmentResult}
+     */
+    @GetMapping("/api/schedules/platform/check")
+    @ResponseBody
+    public PlatformAssignmentResult checkPlatform(
+            @RequestParam("station") String station,
+            @RequestParam("day") String day,
+            @RequestParam("departureTime") String departureTime,
+            @RequestParam(value = "platform", defaultValue = "Platform 1") String platform,
+            @RequestParam(value = "excludeId", required = false) Long excludeId
+    ) {
+        DayOfWeek dayOfWeek = DayOfWeek.valueOf(day.toUpperCase());
+        LocalTime time = LocalTime.parse(departureTime);
+        return scheduleService.checkPlatformAvailability(station, dayOfWeek, time, platform, excludeId);
+    }
+
+    /**
+     * REST endpoint autonomously allocating a conflict-free station platform.
+     *
+     * @param station departure station
+     * @param day day of week
+     * @param departureTime scheduled departure time (HH:mm)
+     * @param excludeId optional schedule ID to exclude
+     * @return Map containing allocated platform
+     */
+    @GetMapping("/api/schedules/platform/auto-assign")
+    @ResponseBody
+    public Map<String, String> autoAssignPlatform(
+            @RequestParam("station") String station,
+            @RequestParam("day") String day,
+            @RequestParam("departureTime") String departureTime,
+            @RequestParam(value = "excludeId", required = false) Long excludeId
+    ) {
+        DayOfWeek dayOfWeek = DayOfWeek.valueOf(day.toUpperCase());
+        LocalTime time = LocalTime.parse(departureTime);
+        String allocated = scheduleService.assignAutonomousPlatform(station, dayOfWeek, time, excludeId);
+        return Map.of("allocatedPlatform", allocated, "status", "SUCCESS");
     }
 
     /**
@@ -58,7 +110,8 @@ public class ScheduleController {
     public String createSchedule(@ModelAttribute("newSchedule") ScheduleDto scheduleDto, RedirectAttributes redirectAttributes) {
         log.debug("Creating new schedule: {}", scheduleDto);
         ScheduleDto created = scheduleService.createSchedule(scheduleDto);
-        redirectAttributes.addFlashAttribute("successMessage", "Timetable schedule #SCH-" + created.getId() + " created successfully.");
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Timetable schedule #SCH-" + created.getId() + " created successfully on " + created.getEffectivePlatform() + ".");
         return "redirect:/trains/schedules";
     }
 

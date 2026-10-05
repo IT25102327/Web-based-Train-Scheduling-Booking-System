@@ -9,7 +9,7 @@ git add .
 
 
 # Commit with the automatically generated message.
-git commit -m "adding open street fix"
+git commit -m "adding station maping "
 
 # Push the changes to the 'IT25102327' branch of the 'origin' remote.
 git push -u origin IT25102327
