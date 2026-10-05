@@ -9,7 +9,7 @@ git add .
 
 
 # Commit with the automatically generated message.
-git commit -m "bug fixing in maping and validation "
+git commit -m "introducing design patterns and principles in the codebase."
 
 # Push the changes to the 'IT25102327' branch of the 'origin' remote.
 git push -u origin IT25102327
