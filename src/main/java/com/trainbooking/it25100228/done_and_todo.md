@@ -6,7 +6,7 @@
 **Priority:** 5  
 **Package:** `com.trainbooking.it25100228`  
 **Templates:** `src/main/resources/templates/it25100228/`  
-**Tests:** `src/test/java/com/trainbooking/it25100228/`  
+**Tests:** `src/test/java/com/trainbooking/it25100228/`
 
 ---
 
