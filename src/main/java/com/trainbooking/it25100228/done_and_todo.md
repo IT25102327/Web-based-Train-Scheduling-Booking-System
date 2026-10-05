@@ -6,7 +6,7 @@
 **Priority:** 5  
 **Package:** `com.trainbooking.it25100228`  
 **Templates:** `src/main/resources/templates/it25100228/`  
-**Tests:** `src/test/java/com/trainbooking/it25100228/`
+**Tests:** `src/test/java/com/trainbooking/it25100228/`  
 
 ---
 
@@ -47,6 +47,13 @@
   - `it25100228/index.html`: Added 5th stat card ("Boarded at Gates" with ID `valBoardedPassengers`), Quick Action button for Turnstile Logs, and real-time JavaScript auto-polling (`pollDashboardLiveStats()` every 10s) to keep metrics synchronized without full reloads.
   - `layout/admin-base.html`: Added "Turnstile Logs" navigation item in the admin console sidebar.
   - `DashboardServiceTest.java`: Added unit test suites for `getRecentBoardingLogs_Success` and `getReconciliationReport_Success`.
+
+- [x] **Phase 5 Deliverables (GoF Design Patterns — Chain of Responsibility Pattern)**:
+  - `TicketValidationHandler.java`: Abstract handler defining chain link pointers and successor invocation (`passToNext`).
+  - `TicketValidationContext.java`: Context object carrying scan payloads, ticket entity, and termination results down the pipeline.
+  - Concrete handlers: `EmptyQrValidationHandler` (non-empty sanity check), `TicketLookupValidationHandler` (sanitization & database resolution), `DuplicateBoardingValidationHandler` (fraud/duplicate check), `CancelledBookingValidationHandler` (cancelled ticket check), and `BoardingApprovalValidationHandler` (terminal check-in & gate authorization).
+  - `TicketValidationChain.java`: Pipeline orchestrator linking handlers via `@PostConstruct` and executing the chain.
+  - `TicketValidationChainTest.java`: 5 unit tests verifying complete chain traversal, empty input termination, missing ticket termination, duplicate scan alert, and cancelled booking termination.
 
 ---
 
